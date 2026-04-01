@@ -1,26 +1,59 @@
-@import "tailwindcss";
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Marker styles */
+.we-marker,
+.we-cluster {
+  background: none !important;
+  border: none !important;
+  overflow: visible !important;
+}
+
+.marker-active {
+  animation: marker-bounce 0.4s ease-out forwards, marker-pulse 1.5s ease-in-out 0.4s infinite;
+}
+
+@keyframes marker-bounce {
+  0% { transform: scale(0.8); opacity: 0.5; }
+  60% { transform: scale(1.8); }
+  100% { transform: scale(1.6); opacity: 1; }
+}
+
+@keyframes marker-pulse {
+  0%, 100% { transform: scale(1.6); }
+  50% { transform: scale(1.8); }
+}
+
+.marker-cluster {
+  background: none !important;
+}
+.marker-cluster div {
+  background: none !important;
+}
+
+/* Property popup: strip Leaflet chrome, hide tip arrow */
+.property-popup .leaflet-popup-content-wrapper {
+  padding: 0 !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.1) !important;
+}
+
+.property-popup .leaflet-popup-content {
+  margin: 0 !important;
+  width: auto !important;
+}
+
+.property-popup .leaflet-popup-tip-container {
+  display: none !important;
 }
