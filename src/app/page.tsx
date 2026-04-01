@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
-import { properties, Property, TransactionType, getPriceRange } from "@/data/properties";
+import { properties, Property, TransactionType, Bounds, getPriceRange, filterByBounds } from "@/data/properties";
 import { Locale, translations } from "@/data/i18n";
 import SearchBar from "@/components/SearchBar";
 import PropertyCard from "@/components/PropertyCard";
@@ -23,6 +23,7 @@ export default function Home() {
     if (id !== null) setSelectionKey((k) => k + 1);
   }, []);
 
+  // Filters
   const [transactionType, setTransactionType] = useState<TransactionType>("buy");
   const [selectedTypes, setSelectedTypes] = useState<Property["type"][]>([]);
   const [minBedrooms, setMinBedrooms] = useState(0);
@@ -39,19 +40,40 @@ export default function Home() {
     setActivePropertyId(null);
   }
 
+  // Viewport bounds: two-phase loading
+  const [activeBounds, setActiveBounds] = useState<Bounds | null>(null);
+  const [pendingBounds, setPendingBounds] = useState<Bounds | null>(null);
+  const [hasMoved, setHasMoved] = useState(false);
+  // Called once after geolocation resolves/fails/times out
+  const handleInitialBounds = useCallback((bounds: Bounds) => {
+    setActiveBounds(bounds);
+    setPendingBounds(bounds);
+  }, []);
+
+  // Called on subsequent pans/zooms (only after initial load)
+  const handleUserMoved = useCallback((bounds: Bounds) => {
+    setPendingBounds(bounds);
+    setHasMoved(true);
+  }, []);
+
+  const handleSearchThisArea = useCallback(() => {
+    setActiveBounds(pendingBounds);
+    setHasMoved(false);
+    setActivePropertyId(null);
+  }, [pendingBounds]);
+
   const t = translations[locale];
 
-  const filtered = useMemo(
-    () =>
-      properties.filter((p) => {
-        if (p.transaction !== transactionType) return false;
-        if (p.price < minPrice || p.price > maxPrice) return false;
-        if (selectedTypes.length > 0 && !selectedTypes.includes(p.type)) return false;
-        if (p.bedrooms < minBedrooms) return false;
-        return true;
-      }),
-    [transactionType, minPrice, maxPrice, selectedTypes, minBedrooms],
-  );
+  const filtered = useMemo(() => {
+    const base = activeBounds ? filterByBounds(properties, activeBounds) : properties;
+    return base.filter((p) => {
+      if (p.transaction !== transactionType) return false;
+      if (p.price < minPrice || p.price > maxPrice) return false;
+      if (selectedTypes.length > 0 && !selectedTypes.includes(p.type)) return false;
+      if (p.bedrooms < minBedrooms) return false;
+      return true;
+    });
+  }, [activeBounds, transactionType, minPrice, maxPrice, selectedTypes, minBedrooms]);
 
   const cardRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
@@ -156,6 +178,10 @@ export default function Home() {
                 selectProperty(activePropertyId === id ? null : id, "map")
               }
               onDeselect={() => selectProperty(null, "map")}
+              onInitialBounds={handleInitialBounds}
+              onUserMoved={handleUserMoved}
+              showSearchButton={hasMoved}
+              onSearchThisArea={handleSearchThisArea}
             />
           </div>
         )}

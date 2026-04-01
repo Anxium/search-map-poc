@@ -12,7 +12,7 @@ import {
 import MarkerClusterGroup from "react-leaflet-cluster";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Property } from "@/data/properties";
+import { Property, Bounds } from "@/data/properties";
 import { Locale, Translations } from "@/data/i18n";
 import { formatPrice } from "@/lib/format";
 
@@ -66,32 +66,20 @@ function createClusterIcon(cluster: any) {
   });
 }
 
-function GeolocateOnMount() {
-  const map = useMap();
-  const located = useRef(false);
-
-  useEffect(() => {
-    if (located.current || !navigator.geolocation) return;
-    located.current = true;
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        map.setView([pos.coords.latitude, pos.coords.longitude], 13, { animate: true });
-      },
-      () => {}, // silently keep default center on error/deny
-      { timeout: 5000 },
-    );
-  }, [map]);
-
-  return null;
+function toBounds(b: L.LatLngBounds): Bounds {
+  return { north: b.getNorth(), south: b.getSouth(), east: b.getEast(), west: b.getWest() };
 }
 
-function MapController({
+// Single controller handling geolocation, bounds, selection, and clicks
+function MapInternals({
   properties,
   activePropertyId,
   selectionSource,
   selectionKey,
   markerRefs,
   onDeselect,
+  onInitialBounds,
+  onUserMoved,
 }: {
   properties: Property[];
   activePropertyId: number | null;
@@ -99,36 +87,84 @@ function MapController({
   selectionKey: number;
   markerRefs: React.RefObject<Record<number, L.Marker | null>>;
   onDeselect: () => void;
+  onInitialBounds: (b: Bounds) => void;
+  onUserMoved: (b: Bounds) => void;
 }) {
   const map = useMap();
   const prevActiveRef = useRef<number | null>(null);
+  const ignoreUntil = useRef(0);
+  const initialized = useRef(false);
 
+  // Refs for callbacks to avoid stale closures
+  const onInitRef = useRef(onInitialBounds);
+  const onMovedRef = useRef(onUserMoved);
+  onInitRef.current = onInitialBounds;
+  onMovedRef.current = onUserMoved;
+
+  // 1. Geolocation + initial bounds (runs once)
+  useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+
+    function done() {
+      onInitRef.current(toBounds(map.getBounds()));
+    }
+
+    if (!navigator.geolocation) {
+      done();
+      return;
+    }
+
+    ignoreUntil.current = Date.now() + 1500;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        map.setView([pos.coords.latitude, pos.coords.longitude], 13, { animate: false });
+        setTimeout(done, 200);
+      },
+      () => setTimeout(done, 100),
+      { timeout: 5000 },
+    );
+
+    const fallback = setTimeout(done, 6000);
+    return () => clearTimeout(fallback);
+  }, [map]);
+
+  // 2. Listen to moveend — distinguish user moves from programmatic
+  useEffect(() => {
+    const handler = () => {
+      if (Date.now() < ignoreUntil.current) return;
+      onMovedRef.current(toBounds(map.getBounds()));
+    };
+    map.on("moveend", handler);
+    return () => { map.off("moveend", handler); };
+  }, [map]);
+
+  // 3. Update marker icons on selection change
   useEffect(() => {
     const prev = prevActiveRef.current;
     const refs = markerRefs.current;
-
     if (prev !== null && refs?.[prev]) {
       refs[prev]!.setIcon(ICON_DEFAULT);
       refs[prev]!.setZIndexOffset(0);
     }
-
     if (activePropertyId !== null && refs?.[activePropertyId]) {
       refs[activePropertyId]!.setIcon(ICON_ACTIVE);
       refs[activePropertyId]!.setZIndexOffset(10000);
     }
-
     prevActiveRef.current = activePropertyId;
   }, [activePropertyId, markerRefs]);
 
+  // 4. Handle popup open + pan on selection
   useEffect(() => {
     map.closePopup();
-
     if (!activePropertyId) return;
 
     const property = properties.find((p) => p.id === activePropertyId);
     if (!property) return;
 
     if (selectionSource === "list") {
+      // Ignore moveend for 2s: covers setView animation + popup open + autoPan
+      ignoreUntil.current = Date.now() + 2000;
       const targetZoom = 16;
       const targetPoint = map.project([property.lat, property.lng], targetZoom);
       const offsetPoint = L.point(targetPoint.x, targetPoint.y + 150);
@@ -137,14 +173,17 @@ function MapController({
       const timer = setTimeout(() => {
         const marker = markerRefs.current?.[property.id];
         if (marker) marker.openPopup();
-      }, 600);
+      }, 700);
       return () => clearTimeout(timer);
     } else {
+      // Ignore moveend for 1s: covers popup open + autoPan
+      ignoreUntil.current = Date.now() + 1000;
       const marker = markerRefs.current?.[property.id];
       if (marker) marker.openPopup();
     }
   }, [activePropertyId, selectionKey, properties, map, markerRefs, selectionSource]);
 
+  // 5. Click on map background deselects
   useMapEvents({ click: () => onDeselect() });
 
   return null;
@@ -204,6 +243,10 @@ interface MapProps {
   selectionKey?: number;
   onMarkerClick?: (id: number) => void;
   onDeselect?: () => void;
+  onInitialBounds?: (bounds: Bounds) => void;
+  onUserMoved?: (bounds: Bounds) => void;
+  showSearchButton?: boolean;
+  onSearchThisArea?: () => void;
 }
 
 export default function Map({
@@ -215,6 +258,10 @@ export default function Map({
   selectionKey,
   onMarkerClick,
   onDeselect,
+  onInitialBounds,
+  onUserMoved,
+  showSearchButton,
+  onSearchThisArea,
 }: MapProps) {
   const markerRefs = useRef<Record<number, L.Marker | null>>({});
   const setMarkerRef = useCallback((id: number, ref: L.Marker | null) => {
@@ -227,19 +274,20 @@ export default function Map({
     <div style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden", borderRadius: "8px 32px 32px 8px" }}>
       <MapContainer
         key={locale}
-        center={[50.8503, 4.3517]}
-        zoom={12}
+        center={[50.5, 4.5]}
+        zoom={8}
         style={{ position: "absolute", inset: 0 }}
         zoomControl={false}
       >
-        <GeolocateOnMount />
-        <MapController
+        <MapInternals
           properties={properties}
           activePropertyId={activePropertyId ?? null}
           selectionSource={selectionSource ?? null}
           selectionKey={selectionKey ?? 0}
           markerRefs={markerRefs}
           onDeselect={handleDeselect}
+          onInitialBounds={onInitialBounds ?? (() => {})}
+          onUserMoved={onUserMoved ?? (() => {})}
         />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
@@ -268,6 +316,37 @@ export default function Map({
           ))}
         </MarkerClusterGroup>
       </MapContainer>
+
+      {showSearchButton && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onSearchThisArea?.(); }}
+          style={{
+            position: "absolute",
+            top: 16,
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 1000,
+            background: "white",
+            border: "1px solid #d1d5db",
+            borderRadius: 24,
+            padding: "10px 20px",
+            fontSize: 14,
+            fontWeight: 600,
+            color: "#374151",
+            cursor: "pointer",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            fontFamily: "Inter, sans-serif",
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          {t.searchThisArea}
+        </button>
+      )}
     </div>
   );
 }

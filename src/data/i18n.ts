@@ -28,6 +28,7 @@ export const translations = {
     minPrice: "Prix min",
     maxPrice: "Prix max",
     properties: "propriétés",
+    searchThisArea: "Rechercher dans cette zone",
   },
   nl: {
     buy: "Kopen",
@@ -53,6 +54,7 @@ export const translations = {
     minPrice: "Min prijs",
     maxPrice: "Max prijs",
     properties: "eigendommen",
+    searchThisArea: "Zoek in dit gebied",
   },
   en: {
     buy: "Buy",
@@ -78,6 +80,7 @@ export const translations = {
     minPrice: "Min Price",
     maxPrice: "Max Price",
     properties: "properties",
+    searchThisArea: "Search this area",
   },
 } as const;
 

@@ -14,7 +14,24 @@ export interface Property {
   images: string[];
 }
 
-// Curated Unsplash photos per property type
+export interface Bounds {
+  north: number;
+  south: number;
+  east: number;
+  west: number;
+}
+
+export function filterByBounds(list: Property[], bounds: Bounds): Property[] {
+  return list.filter(
+    (p) =>
+      p.lat >= bounds.south &&
+      p.lat <= bounds.north &&
+      p.lng >= bounds.west &&
+      p.lng <= bounds.east,
+  );
+}
+
+// Photos per property type
 const photosByType: Record<string, string[]> = {
   house: [
     "https://images.unsplash.com/photo-1518780664697-55e3ad937233?w=400&h=300&fit=crop",
@@ -58,7 +75,6 @@ const photosByType: Record<string, string[]> = {
   ],
 };
 
-// Seeded random for reproducible data
 function seededRandom(seed: number) {
   let s = seed;
   return () => {
@@ -69,44 +85,86 @@ function seededRandom(seed: number) {
 
 const rand = seededRandom(42);
 
-const streets = [
-  "Rue de la Loi",
-  "Avenue Louise",
-  "Boulevard Anspach",
-  "Rue Neuve",
-  "Avenue de Tervueren",
-  "Rue Royale",
-  "Chaussée de Waterloo",
-  "Rue du Bailli",
-  "Avenue Franklin Roosevelt",
-  "Rue de Flandre",
-  "Rue Haute",
-  "Boulevard du Jardin Botanique",
-  "Avenue de la Couronne",
-  "Rue de Namur",
-  "Chaussée d'Ixelles",
-  "Rue du Midi",
-  "Avenue Brugmann",
-  "Rue de l'Ecuyer",
-  "Boulevard de Waterloo",
-  "Rue des Chartreux",
-  "Avenue du Diamant",
-  "Rue Marie-Christine",
-  "Chaussée de Louvain",
-  "Avenue Jean Volders",
-  "Rue de Laeken",
-  "Boulevard Léopold II",
-  "Rue Dansaert",
-  "Avenue de Stalingrad",
-  "Rue du Marché aux Herbes",
-  "Chaussée de Charleroi",
+interface CityDef {
+  name: string;
+  lat: number;
+  lng: number;
+  weight: number;
+  postalPrefix: number;
+  streets: string[];
+}
+
+const BELGIUM_CITIES: CityDef[] = [
+  {
+    name: "Bruxelles", lat: 50.8503, lng: 4.3517, weight: 0.25, postalPrefix: 1000,
+    streets: ["Rue de la Loi", "Avenue Louise", "Boulevard Anspach", "Rue Neuve", "Rue Royale", "Chaussée de Waterloo", "Rue du Bailli", "Avenue Franklin Roosevelt", "Rue de Flandre", "Rue Haute", "Avenue de la Couronne", "Rue Dansaert", "Rue du Marché aux Herbes"],
+  },
+  {
+    name: "Antwerpen", lat: 51.2194, lng: 4.4025, weight: 0.15, postalPrefix: 2000,
+    streets: ["Meir", "Nationalestraat", "Kammenstraat", "Kloosterstraat", "Lange Gasthuisstraat", "Frankrijklei", "Italië lei", "Schuttershofstraat"],
+  },
+  {
+    name: "Gent", lat: 51.0543, lng: 3.7174, weight: 0.10, postalPrefix: 9000,
+    streets: ["Veldstraat", "Korenmarkt", "Graslei", "Vrijdagmarkt", "Coupure", "Sint-Pietersnieuwstraat", "Overpoortstraat"],
+  },
+  {
+    name: "Bruges", lat: 51.2093, lng: 3.2247, weight: 0.07, postalPrefix: 8000,
+    streets: ["Steenstraat", "Markt", "Langestraat", "Noordzandstraat", "Smedenstraat", "Katelijnestraat"],
+  },
+  {
+    name: "Liège", lat: 50.6326, lng: 5.5797, weight: 0.10, postalPrefix: 4000,
+    streets: ["Rue de la Cathédrale", "Boulevard d'Avroy", "Rue Saint-Gilles", "Place Saint-Lambert", "Rue Hors-Château", "Quai de la Batte"],
+  },
+  {
+    name: "Namur", lat: 50.4674, lng: 4.8712, weight: 0.07, postalPrefix: 5000,
+    streets: ["Rue de l'Ange", "Rue de Fer", "Place d'Armes", "Rue de Bruxelles", "Boulevard Cauchy", "Rue Emile Cuvelier"],
+  },
+  {
+    name: "Charleroi", lat: 50.4108, lng: 4.4446, weight: 0.07, postalPrefix: 6000,
+    streets: ["Boulevard Tirou", "Rue de la Montagne", "Boulevard Devreux", "Rue de Marcinelle", "Place Charles II"],
+  },
+  {
+    name: "Leuven", lat: 50.8798, lng: 4.7005, weight: 0.07, postalPrefix: 3000,
+    streets: ["Bondgenotenlaan", "Naamsestraat", "Tiensestraat", "Brusselsestraat", "Diestsestraat", "Parijsstraat"],
+  },
 ];
+
+// Belgium boundary polygon [lng, lat] from natural earth data
+const BELGIUM_POLYGON: [number, number][] = [
+  [3.314971,51.345781],[4.047071,51.267259],[4.973991,51.475024],[5.606976,51.037298],
+  [6.156658,50.803721],[6.043073,50.128052],[5.782417,50.090328],[5.674052,49.529484],
+  [4.799222,49.985373],[4.286023,49.907497],[3.588184,50.378992],[3.123252,50.780363],
+  [2.658422,50.796848],[2.513573,51.148506],[3.314971,51.345781],
+];
+
+// Ray-casting point-in-polygon (lng, lat order to match the polygon)
+function isInBelgium(lat: number, lng: number): boolean {
+  let inside = false;
+  for (let i = 0, j = BELGIUM_POLYGON.length - 1; i < BELGIUM_POLYGON.length; j = i++) {
+    const [xi, yi] = BELGIUM_POLYGON[i];
+    const [xj, yj] = BELGIUM_POLYGON[j];
+    if ((yi > lat) !== (yj > lat) && lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
+const RURAL_WEIGHT = 0.12;
+const TOTAL_PROPERTIES = 1500;
 
 const types: Property["type"][] = ["apartment", "house", "studio"];
 
-// Brussels center approx 50.8503, 4.3517
-const BRUSSELS_CENTER_LAT = 50.8503;
-const BRUSSELS_CENTER_LNG = 4.3517;
+function pickCity(): CityDef | null {
+  const r = rand();
+  if (r < RURAL_WEIGHT) return null; // rural scatter
+  let cumulative = RURAL_WEIGHT;
+  for (const city of BELGIUM_CITIES) {
+    cumulative += city.weight;
+    if (r < cumulative) return city;
+  }
+  return BELGIUM_CITIES[0];
+}
 
 function getPropertyImages(index: number, type: Property["type"]): string[] {
   const pool = photosByType[type];
@@ -118,9 +176,29 @@ function getPropertyImages(index: number, type: Property["type"]): string[] {
   return images;
 }
 
-export const properties: Property[] = Array.from({ length: 200 }, (_, i) => {
+export const properties: Property[] = Array.from({ length: TOTAL_PROPERTIES }, (_, i) => {
+  const city = pickCity();
   const type = types[Math.floor(rand() * types.length)];
   const transaction: TransactionType = rand() < 0.6 ? "buy" : "rent";
+
+  let lat: number, lng: number, postalCode: string, address: string;
+
+  if (city) {
+    lat = city.lat + (rand() - 0.5) * 0.06;
+    lng = city.lng + (rand() - 0.5) * 0.08;
+    postalCode = `${city.postalPrefix + Math.floor(rand() * 50)} ${city.name}`;
+    address = `${Math.floor(rand() * 200) + 1} ${city.streets[Math.floor(rand() * city.streets.length)]}`;
+  } else {
+    // Rural: scatter within Belgium using actual boundary polygon
+    do {
+      lat = 49.5 + rand() * 2.0;
+      lng = 2.5 + rand() * 3.7;
+    } while (!isInBelgium(lat, lng));
+    postalCode = `${Math.floor(1000 + rand() * 8000)} Belgique`;
+    const ruralStreets = ["Rue Principale", "Grand-Route", "Chaussée de", "Steenweg", "Dorpsstraat", "Kerkstraat"];
+    address = `${Math.floor(rand() * 200) + 1} ${ruralStreets[Math.floor(rand() * ruralStreets.length)]}`;
+  }
+
   const bedrooms =
     type === "studio" ? 0 : type === "apartment" ? 1 + Math.floor(rand() * 3) : 2 + Math.floor(rand() * 4);
   const surface =
@@ -132,7 +210,6 @@ export const properties: Property[] = Array.from({ length: 200 }, (_, i) => {
 
   let price: number;
   if (transaction === "rent") {
-    // Monthly rent: 500-2500€
     const baseRent = type === "studio" ? 500 : type === "apartment" ? 700 : 1200;
     price = Math.round((baseRent + surface * 5 + rand() * 500) / 50) * 50;
   } else {
@@ -142,11 +219,11 @@ export const properties: Property[] = Array.from({ length: 200 }, (_, i) => {
 
   return {
     id: i + 1,
-    lat: BRUSSELS_CENTER_LAT + (rand() - 0.5) * 0.08,
-    lng: BRUSSELS_CENTER_LNG + (rand() - 0.5) * 0.12,
+    lat,
+    lng,
     price,
-    address: `${Math.floor(rand() * 200) + 1} ${streets[Math.floor(rand() * streets.length)]}`,
-    postalCode: `${1000 + (i % 200)} Bruxelles`,
+    address,
+    postalCode,
     type,
     transaction,
     bedrooms,
@@ -155,7 +232,6 @@ export const properties: Property[] = Array.from({ length: 200 }, (_, i) => {
   };
 });
 
-// Price bounds per transaction type
 const buyProperties = properties.filter((p) => p.transaction === "buy");
 const rentProperties = properties.filter((p) => p.transaction === "rent");
 
