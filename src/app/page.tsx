@@ -7,12 +7,34 @@ import { Locale, translations } from "@/data/i18n";
 import { fetchProperties, SortOption } from "@/lib/api";
 import SearchBar from "@/components/SearchBar";
 import PropertyCard from "@/components/PropertyCard";
-import { ChevronDownIcon } from "@/components/Icons";
+import { ChevronDownIcon, RefreshIcon } from "@/components/Icons";
 import { Translations } from "@/data/i18n";
 
 const Map = dynamic(() => import("@/components/Map"), { ssr: false });
 
 const SORT_OPTIONS: SortOption[] = ["relevance", "priceLowToHigh", "priceHighToLow", "surfaceLargest"];
+
+function SortOptionButton({ active, children, onClick }: { active: boolean; children: React.ReactNode; onClick: () => void }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      role="option"
+      aria-selected={active}
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: "block", width: "100%", textAlign: "left", padding: "8px 12px", borderRadius: 4, fontSize: 14, border: "none", cursor: "pointer",
+        background: active ? "#1892a2" : hovered ? "#F3F4F6" : "transparent",
+        color: active ? "white" : "#374151",
+        fontWeight: active ? 500 : 400,
+        transition: "background 0.1s",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
 
 function SortDropdown({ sortBy, onChange, t }: { sortBy: SortOption; onChange: (s: SortOption) => void; t: Translations }) {
   const [open, setOpen] = useState(false);
@@ -50,20 +72,9 @@ function SortDropdown({ sortBy, onChange, t }: { sortBy: SortOption; onChange: (
       {open && (
         <div role="listbox" style={{ position: "absolute", top: "100%", right: 0, marginTop: 4, background: "white", border: "1px solid #e5e7eb", borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.1)", padding: 8, zIndex: 10000, minWidth: 200 }}>
           {SORT_OPTIONS.map((opt) => (
-            <button
-              key={opt}
-              role="option"
-              aria-selected={sortBy === opt}
-              onClick={() => { onChange(opt); setOpen(false); }}
-              style={{
-                display: "block", width: "100%", textAlign: "left", padding: "8px 12px", borderRadius: 4, fontSize: 14, border: "none", cursor: "pointer",
-                background: sortBy === opt ? "#1892a2" : "transparent",
-                color: sortBy === opt ? "white" : "#374151",
-                fontWeight: sortBy === opt ? 500 : 400,
-              }}
-            >
+            <SortOptionButton key={opt} active={sortBy === opt} onClick={() => { onChange(opt); setOpen(false); }}>
               {labels[opt]}
-            </button>
+            </SortOptionButton>
           ))}
         </div>
       )}
@@ -110,9 +121,7 @@ function SearchAreaButton({ enabled, loading, label, loadingLabel, onClick }: {
       {loading ? (
         <div style={{ width: 16, height: 16, border: "2px solid #e5e7eb", borderTopColor: "#1892A2", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
       ) : (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={disabled ? "#9ca3af" : "#374151"} strokeWidth="2">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-        </svg>
+        <RefreshIcon size={16} color={disabled ? "#9ca3af" : "#374151"} stroke={2} />
       )}
       {loading ? loadingLabel : label}
     </button>

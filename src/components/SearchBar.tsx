@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, CSSProperties } from "react";
 import { Locale, Translations } from "@/data/i18n";
 import { Property, TransactionType } from "@/data/properties";
 import { formatShortPrice } from "@/lib/format";
-import { ChevronDownIcon } from "@/components/Icons";
+import { ChevronDownIcon, LocationIcon } from "@/components/Icons";
 
 type ViewMode = "list" | "hybrid" | "map";
 type PropertyType = Property["type"];
@@ -37,17 +37,41 @@ const selectStyle: CSSProperties = {
   height: 38,
 };
 
-const optionActive: CSSProperties = {
-  textAlign: "left", padding: "6px 12px", borderRadius: 4, fontSize: 14,
-  border: "none", cursor: "pointer", width: "100%",
-  background: "#1892a2", color: "white", fontWeight: 500,
-};
+function CheckboxOption({ checked, onChange, label }: { checked: boolean; onChange: () => void; label: string }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <label
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", borderRadius: 4, cursor: "pointer", background: hovered ? "#F3F4F6" : "transparent", transition: "background 0.1s" }}
+    >
+      <input type="checkbox" checked={checked} onChange={onChange} style={{ accentColor: "#1892a2" }} />
+      <span style={{ fontSize: 14, color: "#374151" }}>{label}</span>
+    </label>
+  );
+}
 
-const optionInactive: CSSProperties = {
-  textAlign: "left", padding: "6px 12px", borderRadius: 4, fontSize: 14,
-  border: "none", cursor: "pointer", width: "100%",
-  background: "transparent", color: "#374151", fontWeight: 400,
-};
+function OptionButton({ active, children, ...props }: { active: boolean; children: React.ReactNode } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <button
+      {...props}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        textAlign: "left", padding: "6px 12px", borderRadius: 4, fontSize: 14,
+        border: "none", cursor: "pointer", width: "100%",
+        background: active ? "#1892a2" : hovered ? "#F3F4F6" : "transparent",
+        color: active ? "white" : "#374151",
+        fontWeight: active ? 500 : 400,
+        transition: "background 0.1s",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
 
 function useClickOutside(ref: React.RefObject<HTMLDivElement | null>, onClose: () => void) {
   useEffect(() => {
@@ -121,9 +145,9 @@ export default function SearchBar({
       <Dropdown label={t.buy} trigger={<div style={{ ...selectStyle, color: "#111827" }}>{transactionType === "buy" ? t.buy : t.rent} <ChevronDownIcon /></div>}>
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           {(["buy", "rent"] as const).map((type) => (
-            <button key={type} onClick={() => onTransactionTypeChange(type)} aria-selected={transactionType === type} role="option" style={transactionType === type ? optionActive : optionInactive}>
+            <OptionButton key={type} onClick={() => onTransactionTypeChange(type)} aria-selected={transactionType === type} role="option" active={transactionType === type}>
               {type === "buy" ? t.buy : t.rent}
-            </button>
+            </OptionButton>
           ))}
         </div>
       </Dropdown>
@@ -131,7 +155,7 @@ export default function SearchBar({
       <div style={{ flexShrink: 0 }}>
         <div style={{ ...selectStyle, color: locationMode !== "none" ? "#111827" : "#6b7280" }}>
           {locationMode === "searchedZone" ? t.searchedZone : locationMode === "drawnZone" ? t.drawnZone : t.locationPlaceholder}
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={locationMode !== "none" ? "#111827" : "#9ca3af"} strokeWidth="1.5"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+          <LocationIcon size={18} color={locationMode !== "none" ? "#111827" : "#9ca3af"} stroke={1.5} />
         </div>
       </div>
 
@@ -146,10 +170,7 @@ export default function SearchBar({
       } <ChevronDownIcon /></div>}>
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           {allTypes.map((type) => (
-            <label key={type} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", borderRadius: 4, cursor: "pointer" }}>
-              <input type="checkbox" checked={selectedTypes.includes(type)} onChange={() => toggleType(type)} style={{ accentColor: "#1892a2" }} />
-              <span style={{ fontSize: 14, color: "#374151" }}>{t[type]}</span>
-            </label>
+            <CheckboxOption key={type} checked={selectedTypes.includes(type)} onChange={() => toggleType(type)} label={t[type]} />
           ))}
         </div>
       </Dropdown>
@@ -172,9 +193,9 @@ export default function SearchBar({
       <Dropdown label={t.bedroomsDefault} trigger={<div style={{ ...selectStyle, color: "#111827" }}>{minBedrooms === 0 ? t.bedroomsDefault : `${minBedrooms}+ ${t.bed}`} <ChevronDownIcon /></div>}>
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           {[0, 1, 2, 3, 4, 5].map((n) => (
-            <button key={n} onClick={() => onMinBedroomsChange(n)} style={minBedrooms === n ? optionActive : optionInactive}>
+            <OptionButton key={n} onClick={() => onMinBedroomsChange(n)} active={minBedrooms === n}>
               {n === 0 ? t.bedroomsDefault : `${n}+ ${t.bed}`}
-            </button>
+            </OptionButton>
           ))}
         </div>
       </Dropdown>

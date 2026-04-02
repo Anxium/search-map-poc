@@ -14,58 +14,62 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Property, Bounds } from "@/data/properties";
 import { Locale, Translations } from "@/data/i18n";
-import { formatPrice } from "@/lib/format";
+import { formatPrice, formatShortPrice } from "@/lib/format";
 
-const WI_LOGO_PATH =
-  "m64.42 46.92-39.59-25.66c-5.26 11.46-7.96 23.94-7.96 36.39.01 12.08 2.58 24.14 7.86 35.21l66.12-42.96 75.27-48.8c1.62-1.05 3.39-1.35 5.25-.9 1.86.43 3.31 1.51 4.29 3.15l.88 1.48c9.47 16.06 14.37 34.45 14.36 52.81 0 18-4.73 35.99-14.52 51.72l-.89 1.43c-1 1.61-2.44 2.62-4.29 3.04-1.85.4-3.59.1-5.16-.93l-55.09-35.8 15.5-10.05 39.72 25.8c5.28-11.07 7.86-23.14 7.86-35.21.02-12.45-2.7-24.93-7.96-36.39l-47.59 30.85-15.69 10.17-77.92 50.64c-1.59 1.03-3.33 1.33-5.18.93-1.85-.42-3.28-1.44-4.29-3.04l-.89-1.43c-9.76-15.74-14.49-33.72-14.51-51.72-.01-18.36 4.91-36.75 14.37-52.82l.88-1.48c.97-1.65 2.41-2.73 4.27-3.15 1.88-.45 3.64-.14 5.25.9l55.15 35.74-15.51 10.07z";
+// Tabler icon SVG paths (14px, stroke 1.5) for inline use in Leaflet markers
+const TYPE_ICONS: Record<Property["type"], string> = {
+  house: '<path d="M5 12l-2 0l9 -9l9 9l-2 0"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"/><path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"/>',
+  apartment: '<path d="M3 21l18 0"/><path d="M5 21v-14l8 -4v18"/><path d="M19 21v-10l-6 -4"/><path d="M9 9l0 .01"/><path d="M9 12l0 .01"/><path d="M9 15l0 .01"/><path d="M9 18l0 .01"/>',
+  studio: '<path d="M14 12v.01"/><path d="M3 21h18"/><path d="M6 21v-16a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v16"/>',
+};
 
-const ICON_W = 28;
-const ICON_H = Math.round(ICON_W * (114.02 / 190.89));
-
-function buildIconHtml(active = false) {
-  const cls = active ? ` class="marker-active"` : "";
-  // Active: white pill background behind the logo for a soft highlight, always distinguishable by shape
-  const bg = active
-    ? `background:white;border-radius:20px;padding:3px 5px;box-shadow:0 2px 6px rgba(0,0,0,0.2);`
-    : "";
-  return `<div${cls} style="display:inline-flex;align-items:center;justify-content:center;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.25));${bg}">
-    <svg viewBox="0 0 190.89 114.02" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width:${ICON_W}px;height:${ICON_H}px;">
-      <path d="${WI_LOGO_PATH}" fill="#26e0e5"/>
-    </svg>
-  </div>`;
+function typeIconSvg(type: Property["type"], color: string) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${TYPE_ICONS[type]}</svg>`;
 }
 
-const ICON_DEFAULT = L.divIcon({
-  className: "we-marker",
-  html: buildIconHtml(false),
-  iconSize: [ICON_W, ICON_H],
-  iconAnchor: [ICON_W / 2, ICON_H / 2],
-  popupAnchor: [0, -ICON_H / 2 - 8],
-});
+// Price range colors: green→teal→blue→purple
+function priceColor(price: number, isRent: boolean): { bg: string; border: string; text: string } {
+  const threshold = isRent
+    ? [800, 1200, 1800] // rent thresholds
+    : [250000, 400000, 600000]; // buy thresholds
 
-// Active: same brand color but with white pill bg + scale animation = clearly distinct
-const ICON_ACTIVE = L.divIcon({
-  className: "we-marker",
-  html: buildIconHtml(true),
-  iconSize: [ICON_W + 10, ICON_H + 6],
-  iconAnchor: [(ICON_W + 10) / 2, (ICON_H + 6) / 2],
-  popupAnchor: [0, -(ICON_H + 6) / 2 - 8],
-});
+  if (price <= threshold[0]) return { bg: "#ecfdf5", border: "#6ee7b7", text: "#065f46" }; // green — affordable
+  if (price <= threshold[1]) return { bg: "#e9fcfc", border: "#26e0e5", text: "#115e59" }; // teal — mid
+  if (price <= threshold[2]) return { bg: "#eff6ff", border: "#93c5fd", text: "#1e40af" }; // blue — upper
+  return { bg: "#faf5ff", border: "#c4b5fd", text: "#5b21b6" }; // purple — premium
+}
 
-const CLUSTER_SVG = `<svg viewBox="0 0 190.89 114.02" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width:18px;height:11px;flex-shrink:0;"><path d="${WI_LOGO_PATH}" fill="#26e0e5"/></svg>`;
+function createPropertyIcon(property: Property, active: boolean) {
+  const label = formatShortPrice(property.price);
+  const colors = active
+    ? { bg: "#172C40", border: "#172C40", text: "#ffffff" }
+    : priceColor(property.price, property.transaction === "rent");
+  const cls = active ? ` class="marker-active"` : "";
+  const estimatedWidth = 14 + 4 + label.length * 7 + 20;
 
-// Higher contrast cluster colors for daltonism: dark teal text on white bg
+  return L.divIcon({
+    className: "we-marker",
+    html: `<div${cls} style="display:inline-flex;align-items:center;gap:4px;background:${colors.bg};border:1.5px solid ${colors.border};border-radius:20px;padding:3px 8px;font-family:Inter,sans-serif;font-size:12px;font-weight:600;color:${colors.text};white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,0.15);line-height:16px;cursor:pointer;">
+      ${typeIconSvg(property.type, colors.text)}
+      ${label}
+    </div>`,
+    iconSize: [estimatedWidth, 26],
+    iconAnchor: [estimatedWidth / 2, 13],
+    popupAnchor: [0, -18],
+  });
+}
+
 function makeClusterIconFn(propertiesLabel: string) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (cluster: any) => {
     const count = cluster.getChildCount();
     const label = `${count} ${propertiesLabel}`;
-    const estimatedWidth = 16 + 6 + label.length * 7 + 16;
+    const estimatedWidth = 14 + 4 + label.length * 7 + 20;
 
     return L.divIcon({
       className: "we-cluster",
-      html: `<div style="display:inline-flex;align-items:center;gap:4px;background:#fff;border:1.5px solid #1892A2;border-radius:20px;padding:4px 10px;font-family:Inter,sans-serif;font-size:12px;font-weight:600;color:#172C40;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,.06),0 1px 3px rgba(0,0,0,.10);line-height:16px;" role="img" aria-label="${label}">
-        ${CLUSTER_SVG}
+      html: `<div style="display:inline-flex;align-items:center;gap:4px;background:#fff;border:1.5px solid #1892A2;border-radius:20px;padding:3px 8px;font-family:Inter,sans-serif;font-size:12px;font-weight:600;color:#172C40;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,0.15);line-height:16px;" role="img" aria-label="${label}">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1892A2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7l6 -3l6 3l6 -3v13l-6 3l-6 -3l-6 3v-13"/><path d="M9 4v13"/><path d="M15 7v13"/></svg>
         ${label}
       </div>`,
       iconSize: [estimatedWidth, 26],
@@ -184,15 +188,17 @@ function MapInternals({
     const prev = prevActiveRef.current;
     const refs = markerRefs.current;
     if (prev !== null && refs?.[prev]) {
-      refs[prev]!.setIcon(ICON_DEFAULT);
+      const prevProp = properties.find((p) => p.id === prev);
+      if (prevProp) refs[prev]!.setIcon(createPropertyIcon(prevProp, false));
       refs[prev]!.setZIndexOffset(0);
     }
     if (activePropertyId !== null && refs?.[activePropertyId]) {
-      refs[activePropertyId]!.setIcon(ICON_ACTIVE);
+      const activeProp = properties.find((p) => p.id === activePropertyId);
+      if (activeProp) refs[activePropertyId]!.setIcon(createPropertyIcon(activeProp, true));
       refs[activePropertyId]!.setZIndexOffset(10000);
     }
     prevActiveRef.current = activePropertyId;
-  }, [activePropertyId, markerRefs]);
+  }, [activePropertyId, markerRefs, properties]);
 
   // 4. Handle popup open + pan on selection
   useEffect(() => {
@@ -375,7 +381,7 @@ export default function Map({
             <Marker
               key={property.id}
               position={[property.lat, property.lng]}
-              icon={property.id === activePropertyId ? ICON_ACTIVE : ICON_DEFAULT}
+              icon={createPropertyIcon(property, property.id === activePropertyId)}
               ref={(ref) => setMarkerRef(property.id, ref)}
               zIndexOffset={property.id === activePropertyId ? 10000 : Math.max(0, properties.length - index)}
               eventHandlers={{

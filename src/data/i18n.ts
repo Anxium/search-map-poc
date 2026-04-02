@@ -30,7 +30,7 @@ export const translations = {
     perMonth: "/mois",
     minPrice: "Prix min",
     maxPrice: "Prix max",
-    properties: "propriétés",
+    properties: "biens",
     searchThisArea: "Rechercher dans cette zone",
     loading: "Chargement...",
     noResults: "Aucun résultat dans cette zone",

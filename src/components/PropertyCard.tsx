@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Property } from "@/data/properties";
 import { Translations } from "@/data/i18n";
 import { formatPrice } from "@/lib/format";
-import { EuroIcon, RulerIcon, BedIcon } from "@/components/Icons";
+import { EuroIcon, RulerIcon, BedIcon, ChevronLeftIcon, ChevronRightIcon, CheckIcon } from "@/components/Icons";
 
 interface PropertyCardProps {
   property: Property;
@@ -71,7 +71,7 @@ export default function PropertyCard({
       {/* Active indicator: small label visible regardless of color perception */}
       {isActive && (
         <div style={{ fontSize: 11, fontWeight: 600, color: "#1892A2", marginBottom: 4, paddingLeft: 4, display: "flex", alignItems: "center", gap: 4 }}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1892A2" strokeWidth="3" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+          <CheckIcon size={12} color="#1892A2" stroke={3} aria-hidden="true" />
           {t.selected}
         </div>
       )}
@@ -101,7 +101,7 @@ export default function PropertyCard({
                 padding: "7px 24px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
               }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4b5563" strokeWidth="2" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+              <ChevronLeftIcon size={16} color="#4b5563" stroke={2} aria-hidden="true" />
             </button>
             <div style={{ flex: 1, textAlign: "center", fontSize: 12, fontWeight: 500, color: "#4b5563", lineHeight: "16px", padding: "6px 8px" }}>
               {photoIndex + 1} {t.photoOf} {totalPhotos} {t.photos}
@@ -115,7 +115,7 @@ export default function PropertyCard({
                 padding: "7px 24px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
               }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4b5563" strokeWidth="2" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+              <ChevronRightIcon size={16} color="#4b5563" stroke={2} aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -137,10 +137,10 @@ export default function PropertyCard({
               </div>
             </div>
             <div style={{ padding: "8px 0", flex: 1 }}>
-              <SpecRow icon={<EuroIcon />} label={priceLabel} />
-              <SpecRow icon={<RulerIcon />} label={`${property.surface} m²`} />
+              <SpecRow icon={<EuroIcon size={18} color="#6b7280" stroke={1.5} />} label={priceLabel} />
+              <SpecRow icon={<RulerIcon size={18} color="#6b7280" stroke={1.5} />} label={`${property.surface} m²`} />
               {property.bedrooms > 0 && (
-                <SpecRow icon={<BedIcon />} label={`${property.bedrooms} ${t.bedrooms}`} />
+                <SpecRow icon={<BedIcon size={18} color="#6b7280" stroke={1.5} />} label={`${property.bedrooms} ${t.bedrooms}`} />
               )}
             </div>
           </div>
