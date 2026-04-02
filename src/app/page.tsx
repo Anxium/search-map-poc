@@ -4,12 +4,72 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { Property, TransactionType, Bounds, getPriceRange } from "@/data/properties";
 import { Locale, translations } from "@/data/i18n";
-import { fetchProperties } from "@/lib/api";
+import { fetchProperties, SortOption } from "@/lib/api";
 import SearchBar from "@/components/SearchBar";
 import PropertyCard from "@/components/PropertyCard";
 import { ChevronDownIcon } from "@/components/Icons";
+import { Translations } from "@/data/i18n";
 
 const Map = dynamic(() => import("@/components/Map"), { ssr: false });
+
+const SORT_OPTIONS: SortOption[] = ["relevance", "priceLowToHigh", "priceHighToLow", "surfaceLargest"];
+
+function SortDropdown({ sortBy, onChange, t }: { sortBy: SortOption; onChange: (s: SortOption) => void; t: Translations }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const labels: Record<SortOption, string> = {
+    relevance: t.relevance,
+    priceLowToHigh: t.priceLowToHigh,
+    priceHighToLow: t.priceHighToLow,
+    surfaceLargest: t.surfaceLargest,
+  };
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <div
+        role="button"
+        tabIndex={0}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen(!open)}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen(!open); } if (e.key === "Escape") setOpen(false); }}
+        style={{ background: "white", border: "1px solid #d1d5db", borderRadius: 6, boxShadow: "0 1px 2px rgba(0,0,0,0.05)", display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", cursor: "pointer", height: 38 }}
+      >
+        <span style={{ fontSize: 14, fontWeight: 500, color: "#374151" }}>{labels[sortBy]}</span>
+        <ChevronDownIcon />
+      </div>
+      {open && (
+        <div role="listbox" style={{ position: "absolute", top: "100%", right: 0, marginTop: 4, background: "white", border: "1px solid #e5e7eb", borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.1)", padding: 8, zIndex: 10000, minWidth: 200 }}>
+          {SORT_OPTIONS.map((opt) => (
+            <button
+              key={opt}
+              role="option"
+              aria-selected={sortBy === opt}
+              onClick={() => { onChange(opt); setOpen(false); }}
+              style={{
+                display: "block", width: "100%", textAlign: "left", padding: "8px 12px", borderRadius: 4, fontSize: 14, border: "none", cursor: "pointer",
+                background: sortBy === opt ? "#1892a2" : "transparent",
+                color: sortBy === opt ? "white" : "#374151",
+                fontWeight: sortBy === opt ? 500 : 400,
+              }}
+            >
+              {labels[opt]}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function SearchAreaButton({ enabled, loading, label, loadingLabel, onClick }: {
   enabled: boolean;
@@ -76,6 +136,7 @@ export default function Home() {
   const [transactionType, setTransactionType] = useState<TransactionType>("buy");
   const [selectedTypes, setSelectedTypes] = useState<Property["type"][]>([]);
   const [minBedrooms, setMinBedrooms] = useState(0);
+  const [sortBy, setSortBy] = useState<SortOption>("relevance");
 
   const priceRange = getPriceRange(transactionType);
   const [minPrice, setMinPrice] = useState(priceRange.min);
@@ -99,7 +160,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const fetchIdRef = useRef(0);
 
-  const doFetch = useCallback(async (bounds: Bounds, txType: TransactionType, types: Property["type"][], pMin: number, pMax: number, beds: number) => {
+  const doFetch = useCallback(async (bounds: Bounds, txType: TransactionType, types: Property["type"][], pMin: number, pMax: number, beds: number, sort: SortOption) => {
     const id = ++fetchIdRef.current;
     setIsLoading(true);
 
@@ -110,6 +171,7 @@ export default function Home() {
       minPrice: pMin,
       maxPrice: pMax,
       minBedrooms: beds,
+      sort,
     });
 
     if (fetchIdRef.current === id) {
@@ -120,8 +182,8 @@ export default function Home() {
 
   useEffect(() => {
     if (!activeBounds) return;
-    doFetch(activeBounds, transactionType, selectedTypes, minPrice, maxPrice, minBedrooms);
-  }, [activeBounds, transactionType, selectedTypes, minPrice, maxPrice, minBedrooms, doFetch]);
+    doFetch(activeBounds, transactionType, selectedTypes, minPrice, maxPrice, minBedrooms, sortBy);
+  }, [activeBounds, transactionType, selectedTypes, minPrice, maxPrice, minBedrooms, sortBy, doFetch]);
 
   const handleInitialBounds = useCallback((bounds: Bounds) => {
     pendingBoundsRef.current = bounds;
@@ -198,10 +260,7 @@ export default function Home() {
               <p aria-live="polite" style={{ fontSize: 14, fontWeight: 500, color: "#4b5563" }}>
                 {isLoading ? t.loading : `${results.length} ${t.results}`}
               </p>
-              <div style={{ background: "white", border: "1px solid #d1d5db", borderRadius: 6, boxShadow: "0 1px 2px rgba(0,0,0,0.05)", display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", cursor: "pointer" }}>
-                <span style={{ fontSize: 14, fontWeight: 500, color: "#374151" }}>{t.relevance}</span>
-                <ChevronDownIcon />
-              </div>
+              <SortDropdown sortBy={sortBy} onChange={setSortBy} t={t} />
             </div>
 
             {isLoading ? (

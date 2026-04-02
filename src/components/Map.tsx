@@ -371,13 +371,13 @@ export default function Map({
           spiderfyOnMaxZoom
           showCoverageOnHover={false}
         >
-          {properties.map((property) => (
+          {properties.map((property, index) => (
             <Marker
               key={property.id}
               position={[property.lat, property.lng]}
               icon={property.id === activePropertyId ? ICON_ACTIVE : ICON_DEFAULT}
               ref={(ref) => setMarkerRef(property.id, ref)}
-              zIndexOffset={property.id === activePropertyId ? 10000 : 0}
+              zIndexOffset={property.id === activePropertyId ? 10000 : Math.max(0, properties.length - index)}
               eventHandlers={{
                 click: () => onMarkerClick?.(property.id),
               }}
