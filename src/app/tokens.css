@@ -1,0 +1,108 @@
+/*
+ * ============================================================
+ * WE INVEST — Design System CSS Variables
+ * Generated from tokens/*.json
+ * Framework-agnostic: import in any CSS-capable project.
+ * ============================================================
+ */
+
+:root {
+
+  /* ── COLORS: Brand Turquoise ────────────────────────────── */
+  --color-turquoise-50:    #E9FCFC;
+  --color-turquoise-100:   #CEFAFB;
+  --color-turquoise-500:   #21CFD3;
+  --color-turquoise-600:   #1892A2;   /* primary interactive / CTA */
+  --color-turquoise-vivid: #26E0E5;   /* script text accent only */
+
+  /* ── COLORS: Brand Navy/Blue ────────────────────────────── */
+  --color-navy:            #172C40;   /* dark backgrounds, footer */
+  --color-navy-mid:        #375A77;   /* baseline text, secondary print blue */
+  --color-sky:             #F4F8FC;   /* very light blue surface (print/brand book) */
+
+  /* ── COLORS: CTA Gradient ───────────────────────────────── */
+  --color-orange-400:      #FB923C;   /* digital web gradient */
+  --color-orange-600:      #EA580C;
+  --gradient-cta: linear-gradient(116deg, var(--color-orange-400) 0%, var(--color-orange-600) 92%);
+  /* Print gradient (warmer/gold — use for print assets only, not web) */
+  --gradient-cta-print: linear-gradient(116deg, #F1B967 0%, #EF9D63 92%);
+
+  /* ── COLORS: Print Text ─────────────────────────────────── */
+  --color-text-print:           #2F3540;
+  --color-text-print-secondary: #666A73;
+
+  /* ── COLORS: Neutral ────────────────────────────────────── */
+  --color-white:   #FFFFFF;
+  --color-gray-100: #F3F4F6;   /* muted surfaces, inactive tabs */
+  --color-gray-400: #9CA3AF;   /* placeholders, disabled */
+  --color-gray-500: #6B7280;   /* secondary text, nav links */
+  --color-gray-700: #374151;   /* form labels, active tab text */
+  --color-gray-900: #111827;   /* primary text, headings */
+
+  /* ── TYPOGRAPHY: Font Families ──────────────────────────── */
+  /* Digital (web/app) — Inter */
+  --font-sans:    Inter, system-ui, -apple-system, sans-serif;
+  /* Print — Calibre (brand book primary, not for web rendering) */
+  --font-print:   Calibre, sans-serif;
+  /* Fallback web font (newsletters, Google Slides) */
+  --font-fallback: 'Source Sans Pro', sans-serif;
+  /* Brand script — hero/baseline accent. Use as <img> on web. */
+  --font-script:  Manus, cursive;
+
+  /* ── TYPOGRAPHY: Font Weights ───────────────────────────── */
+  --fw-regular:   400;
+  --fw-medium:    500;
+  --fw-semibold:  600;
+  --fw-extrabold: 800;
+
+  /* ── TYPOGRAPHY: Scale ──────────────────────────────────── */
+  --text-xs-size:   12px;  --text-xs-lh:   16px;
+  --text-sm-size:   14px;  --text-sm-lh:   20px;
+  --text-base-size: 16px;  --text-base-lh: 24px;
+  --text-xl-size:   20px;  --text-xl-lh:   28px;
+  --text-4xl-size:  36px;  --text-4xl-lh:  40px;
+  --text-6xl-size:  60px;  --text-6xl-lh:  60px;  --text-6xl-ls: -2.5px;
+  --text-script-size: 90px; --text-script-lh: 90px;   /* Manus font only */
+
+  /* ── SPACING ────────────────────────────────────────────── */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  /* ── LAYOUT ─────────────────────────────────────────────── */
+  --layout-max:       1280px;
+  --layout-padding:   32px;
+  --layout-content:   1216px;
+  --layout-nav-h:     74px;
+
+  /* ── BORDER RADIUS ──────────────────────────────────────── */
+  --radius-sm:   6px;    /* buttons, cards, inputs */
+  --radius-md:   20px;   /* pill tabs */
+  --radius-lg:   25px;   /* round action buttons */
+  --radius-full: 39px;   /* search bar pill */
+
+  /* ── SHADOWS ────────────────────────────────────────────── */
+  --shadow-sm:
+    0 0 0 1px rgba(0,0,0,.05),
+    0 1px 2px rgba(0,0,0,.06),
+    0 1px 3px rgba(0,0,0,.10);
+  --shadow-base:
+    0 1px 2px rgba(0,0,0,.06),
+    0 1px 3px rgba(0,0,0,.10);
+  --shadow-md:
+    0 0 0 1px rgba(0,0,0,.05),
+    0 2px 4px -1px rgba(0,0,0,.06),
+    0 4px 6px -1px rgba(0,0,0,.10);
+  --shadow-lg:
+    0 0 0 1px rgba(0,0,0,.05),
+    0 4px 6px -2px rgba(0,0,0,.05),
+    0 10px 15px -3px rgba(0,0,0,.10);
+}

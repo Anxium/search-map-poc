@@ -58,16 +58,33 @@ function useClickOutside(ref: React.RefObject<HTMLDivElement | null>, onClose: (
   }, [ref, onClose]);
 }
 
-function Dropdown({ children, trigger }: { children: React.ReactNode; trigger: React.ReactNode }) {
+function Dropdown({ children, trigger, label }: { children: React.ReactNode; trigger: React.ReactNode; label?: string }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useClickOutside(ref, () => setOpen(false));
 
   return (
     <div style={{ flexShrink: 0, position: "relative" }} ref={ref}>
-      <div onClick={() => setOpen(!open)}>{trigger}</div>
+      <div
+        role="button"
+        tabIndex={0}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={label}
+        onClick={() => setOpen(!open)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen(!open); }
+          if (e.key === "Escape" && open) { setOpen(false); }
+        }}
+      >
+        {trigger}
+      </div>
       {open && (
-        <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "white", border: "1px solid #e5e7eb", borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.1)", padding: 12, zIndex: 10000, minWidth: 220 }}>
+        <div
+          role="listbox"
+          style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "white", border: "1px solid #e5e7eb", borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.1)", padding: 12, zIndex: 10000, minWidth: 220 }}
+          onKeyDown={(e) => { if (e.key === "Escape") setOpen(false); }}
+        >
           {children}
         </div>
       )}
@@ -99,11 +116,11 @@ export default function SearchBar({
     (minBedrooms > 0 ? 1 : 0);
 
   return (
-    <div style={{ background: "white", display: "flex", alignItems: "center", gap: 8, padding: "8px 32px", boxShadow: "0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06)", position: "relative", zIndex: 10001 }}>
-      <Dropdown trigger={<div style={{ ...selectStyle, color: "#111827" }}>{transactionType === "buy" ? t.buy : t.rent} <ChevronDownIcon /></div>}>
+    <div role="toolbar" aria-label="Search filters" style={{ background: "white", display: "flex", alignItems: "center", gap: 8, padding: "8px 32px", boxShadow: "0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06)", position: "relative", zIndex: 10001 }}>
+      <Dropdown label={t.buy} trigger={<div style={{ ...selectStyle, color: "#111827" }}>{transactionType === "buy" ? t.buy : t.rent} <ChevronDownIcon /></div>}>
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           {(["buy", "rent"] as const).map((type) => (
-            <button key={type} onClick={() => onTransactionTypeChange(type)} style={transactionType === type ? optionActive : optionInactive}>
+            <button key={type} onClick={() => onTransactionTypeChange(type)} aria-selected={transactionType === type} role="option" style={transactionType === type ? optionActive : optionInactive}>
               {type === "buy" ? t.buy : t.rent}
             </button>
           ))}
@@ -117,7 +134,7 @@ export default function SearchBar({
         </div>
       </div>
 
-      <Dropdown trigger={<div style={{ ...selectStyle, color: "#6b7280" }}>{selectedTypes.length === 0 || selectedTypes.length === allTypes.length ? t.typePlaceholder : selectedTypes.map((st) => t[st]).join(", ")} <ChevronDownIcon /></div>}>
+      <Dropdown label={t.typePlaceholder} trigger={<div style={{ ...selectStyle, color: "#6b7280" }}>{selectedTypes.length === 0 || selectedTypes.length === allTypes.length ? t.typePlaceholder : selectedTypes.map((st) => t[st]).join(", ")} <ChevronDownIcon /></div>}>
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           {allTypes.map((type) => (
             <label key={type} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", borderRadius: 4, cursor: "pointer" }}>
@@ -128,7 +145,7 @@ export default function SearchBar({
         </div>
       </Dropdown>
 
-      <Dropdown trigger={<div style={{ ...selectStyle, color: "#6b7280" }}>{minPrice > priceRangeMin || maxPrice < priceRangeMax ? `${formatShortPrice(minPrice)} - ${formatShortPrice(maxPrice)}` : t.budgetPlaceholder} <ChevronDownIcon /></div>}>
+      <Dropdown label={t.budgetPlaceholder} trigger={<div style={{ ...selectStyle, color: "#6b7280" }}>{minPrice > priceRangeMin || maxPrice < priceRangeMax ? `${formatShortPrice(minPrice)} - ${formatShortPrice(maxPrice)}` : t.budgetPlaceholder} <ChevronDownIcon /></div>}>
         <div style={{ width: 250, display: "flex", flexDirection: "column", gap: 12 }}>
           <div>
             <label style={{ fontSize: 12, fontWeight: 500, color: "#6b7280", display: "block", marginBottom: 4 }}>Min</label>
@@ -143,7 +160,7 @@ export default function SearchBar({
         </div>
       </Dropdown>
 
-      <Dropdown trigger={<div style={{ ...selectStyle, color: "#111827" }}>{minBedrooms === 0 ? t.bedroomsDefault : `${minBedrooms}+ ${t.bed}`} <ChevronDownIcon /></div>}>
+      <Dropdown label={t.bedroomsDefault} trigger={<div style={{ ...selectStyle, color: "#111827" }}>{minBedrooms === 0 ? t.bedroomsDefault : `${minBedrooms}+ ${t.bed}`} <ChevronDownIcon /></div>}>
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           {[0, 1, 2, 3, 4, 5].map((n) => (
             <button key={n} onClick={() => onMinBedroomsChange(n)} style={minBedrooms === n ? optionActive : optionInactive}>
@@ -165,11 +182,12 @@ export default function SearchBar({
         )}
       </div>
 
-      <div style={{ background: "#f3f4f6", display: "flex", gap: 2, alignItems: "center", padding: 2, borderRadius: 8, flexShrink: 0, marginLeft: "auto" }}>
+      <div role="group" aria-label="View mode" style={{ background: "#f3f4f6", display: "flex", gap: 2, alignItems: "center", padding: 2, borderRadius: 8, flexShrink: 0, marginLeft: "auto" }}>
         {(["list", "hybrid", "map"] as const).map((mode) => (
           <button
             key={mode}
             onClick={() => onViewModeChange(mode)}
+            aria-pressed={viewMode === mode}
             style={{
               display: "flex", alignItems: "center", gap: 4, padding: "6px 8px", borderRadius: 6, fontSize: 14, fontWeight: 500, cursor: "pointer",
               border: viewMode === mode ? "1px solid #e5e7eb" : "1px solid transparent",
@@ -186,11 +204,12 @@ export default function SearchBar({
         ))}
       </div>
 
-      <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
+      <div role="group" aria-label="Language" style={{ display: "flex", gap: 2, flexShrink: 0 }}>
         {(["fr", "nl", "en"] as const).map((l) => (
           <button
             key={l}
             onClick={() => onLocaleChange(l)}
+            aria-pressed={locale === l}
             style={{
               borderRadius: 4, padding: "4px 6px", fontSize: 12, fontWeight: 500, textTransform: "uppercase", border: "none", cursor: "pointer",
               ...(locale === l

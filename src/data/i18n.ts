@@ -33,6 +33,7 @@ export const translations = {
     noResults: "Aucun résultat dans cette zone",
     searchedZone: "Zone recherchée",
     drawnZone: "Zone dessinée",
+    selected: "Sélectionné",
   },
   nl: {
     buy: "Kopen",
@@ -63,6 +64,7 @@ export const translations = {
     noResults: "Geen resultaten in dit gebied",
     searchedZone: "Gezocht gebied",
     drawnZone: "Getekende zone",
+    selected: "Geselecteerd",
   },
   en: {
     buy: "Buy",
@@ -93,6 +95,7 @@ export const translations = {
     noResults: "No results in this area",
     searchedZone: "Searched zone",
     drawnZone: "Drawn zone",
+    selected: "Selected",
   },
 } as const;
 

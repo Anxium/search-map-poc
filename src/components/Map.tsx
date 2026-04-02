@@ -22,48 +22,56 @@ const WI_LOGO_PATH =
 const ICON_W = 28;
 const ICON_H = Math.round(ICON_W * (114.02 / 190.89));
 
-function buildIconHtml(color: string, active = false) {
+function buildIconHtml(active = false) {
   const cls = active ? ` class="marker-active"` : "";
-  return `<div${cls} style="width:${ICON_W}px;height:${ICON_H}px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.3));">
-    <svg viewBox="0 0 190.89 114.02" xmlns="http://www.w3.org/2000/svg" fill="${color}" style="width:100%;height:100%;">
-      <path d="${WI_LOGO_PATH}"/>
+  // Active: white pill background behind the logo for a soft highlight, always distinguishable by shape
+  const bg = active
+    ? `background:white;border-radius:20px;padding:3px 5px;box-shadow:0 2px 6px rgba(0,0,0,0.2);`
+    : "";
+  return `<div${cls} style="display:inline-flex;align-items:center;justify-content:center;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.25));${bg}">
+    <svg viewBox="0 0 190.89 114.02" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width:${ICON_W}px;height:${ICON_H}px;">
+      <path d="${WI_LOGO_PATH}" fill="#26e0e5"/>
     </svg>
   </div>`;
 }
 
 const ICON_DEFAULT = L.divIcon({
   className: "we-marker",
-  html: buildIconHtml("#26e0e5"),
+  html: buildIconHtml(false),
   iconSize: [ICON_W, ICON_H],
   iconAnchor: [ICON_W / 2, ICON_H / 2],
   popupAnchor: [0, -ICON_H / 2 - 8],
 });
 
+// Active: same brand color but with white pill bg + scale animation = clearly distinct
 const ICON_ACTIVE = L.divIcon({
   className: "we-marker",
-  html: buildIconHtml("#f97316", true),
-  iconSize: [ICON_W, ICON_H],
-  iconAnchor: [ICON_W / 2, ICON_H / 2],
-  popupAnchor: [0, -ICON_H / 2 - 8],
+  html: buildIconHtml(true),
+  iconSize: [ICON_W + 10, ICON_H + 6],
+  iconAnchor: [(ICON_W + 10) / 2, (ICON_H + 6) / 2],
+  popupAnchor: [0, -(ICON_H + 6) / 2 - 8],
 });
 
-const CLUSTER_SVG = `<svg viewBox="0 0 190.89 114.02" xmlns="http://www.w3.org/2000/svg" fill="#26e0e5" style="width:18px;height:11px;flex-shrink:0;"><path d="${WI_LOGO_PATH}"/></svg>`;
+const CLUSTER_SVG = `<svg viewBox="0 0 190.89 114.02" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width:18px;height:11px;flex-shrink:0;"><path d="${WI_LOGO_PATH}" fill="#26e0e5"/></svg>`;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function createClusterIcon(cluster: any) {
-  const count = cluster.getChildCount();
-  const label = `${count} properties`;
-  const estimatedWidth = 16 + 6 + label.length * 7 + 16;
+// Higher contrast cluster colors for daltonism: dark teal text on white bg
+function makeClusterIconFn(propertiesLabel: string) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (cluster: any) => {
+    const count = cluster.getChildCount();
+    const label = `${count} ${propertiesLabel}`;
+    const estimatedWidth = 16 + 6 + label.length * 7 + 16;
 
-  return L.divIcon({
-    className: "we-cluster",
-    html: `<div style="display:inline-flex;align-items:center;gap:4px;background:#cefafb;border:1px solid #65ecf0;border-radius:6px;padding:4px 8px;font-family:Inter,sans-serif;font-size:12px;font-weight:600;color:#194f5f;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,0.12);line-height:16px;">
-      ${CLUSTER_SVG}
-      ${label}
-    </div>`,
-    iconSize: [estimatedWidth, 26],
-    iconAnchor: [estimatedWidth / 2, 13],
-  });
+    return L.divIcon({
+      className: "we-cluster",
+      html: `<div style="display:inline-flex;align-items:center;gap:4px;background:#fff;border:1.5px solid #1892A2;border-radius:20px;padding:4px 10px;font-family:Inter,sans-serif;font-size:12px;font-weight:600;color:#172C40;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,.06),0 1px 3px rgba(0,0,0,.10);line-height:16px;" role="img" aria-label="${label}">
+        ${CLUSTER_SVG}
+        ${label}
+      </div>`,
+      iconSize: [estimatedWidth, 26],
+      iconAnchor: [estimatedWidth / 2, 13],
+    });
+  };
 }
 
 function toBounds(b: L.LatLngBounds): Bounds {
@@ -89,6 +97,8 @@ function MapInternals({
   onDeselect,
   onInitialBounds,
   onUserMoved,
+  fullscreen,
+  viewMode,
 }: {
   properties: Property[];
   activePropertyId: number | null;
@@ -98,8 +108,33 @@ function MapInternals({
   onDeselect: () => void;
   onInitialBounds: (b: Bounds) => void;
   onUserMoved: (b: Bounds) => void;
+  fullscreen: boolean;
+  viewMode: string;
 }) {
   const map = useMap();
+
+  const prevViewModeRef = useRef(viewMode);
+  useEffect(() => {
+    const changed = prevViewModeRef.current !== viewMode;
+    prevViewModeRef.current = viewMode;
+
+    setTimeout(() => {
+      map.invalidateSize();
+      if (changed && activePropertyId) {
+        const property = properties.find((p) => p.id === activePropertyId);
+        if (property) {
+          ignoreUntil.current = Date.now() + 1500;
+          const currentZoom = Math.max(map.getZoom(), 14);
+          const center = panToMarkerBottomCenter(map, property.lat, property.lng, currentZoom);
+          map.setView(center, currentZoom, { animate: false });
+          setTimeout(() => {
+            const marker = markerRefs.current?.[property.id];
+            if (marker) marker.openPopup();
+          }, 200);
+        }
+      }
+    }, 150);
+  }, [viewMode, map, activePropertyId, properties, markerRefs]);
   const prevActiveRef = useRef<number | null>(null);
   const ignoreUntil = useRef(0);
   const initialized = useRef(false);
@@ -204,10 +239,10 @@ function PropertyPopup({ property, t }: { property: Property; t: Translations })
     <Popup className="property-popup" closeButton={false} maxWidth={320} minWidth={280} autoPan={false}>
       <div style={{ width: 280, background: "white", fontFamily: "Inter, sans-serif" }}>
         <div style={{ position: "relative", width: "100%", height: 180, overflow: "hidden" }}>
-          <img src={property.images[0]} alt={type} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-          <div style={{ position: "absolute", bottom: 8, left: "50%", transform: "translateX(-50%)", display: "flex", gap: 6, alignItems: "center" }}>
+          <img src={property.images[0]} alt={`${type} - ${property.address}, ${property.postalCode}`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+          <div style={{ position: "absolute", bottom: 8, left: "50%", transform: "translateX(-50%)", display: "flex", gap: 6, alignItems: "center" }} aria-hidden="true">
             {property.images.slice(0, 5).map((_, i) => (
-              <span key={i} style={{ width: i === 0 ? 8 : 10, height: i === 0 ? 8 : 10, borderRadius: 5, background: i === 0 ? "#26e0e5" : "#e5e7eb", display: "block" }} />
+              <span key={i} style={{ width: i === 0 ? 10 : 7, height: i === 0 ? 10 : 7, borderRadius: 5, background: i === 0 ? "#26e0e5" : "rgba(255,255,255,0.6)", display: "block" }} />
             ))}
           </div>
         </div>
@@ -219,17 +254,17 @@ function PropertyPopup({ property, t }: { property: Property; t: Translations })
           <div style={{ display: "flex", gap: 16, fontSize: 14, fontWeight: 500, color: "#6b7280", lineHeight: "16px" }}>
             {property.bedrooms > 0 && (
               <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="1.5"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="1.5" aria-hidden="true"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
                 {property.bedrooms} {t.bedrooms}
               </span>
             )}
             <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="1.5"><path d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="1.5" aria-hidden="true"><path d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
               {property.surface} m²
             </span>
           </div>
           <div style={{ display: "flex", gap: 6, alignItems: "flex-start", fontSize: 14, fontWeight: 500, color: "#6b7280", lineHeight: "20px" }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="1.5" style={{ flexShrink: 0, marginTop: 2 }}><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="1.5" aria-hidden="true" style={{ flexShrink: 0, marginTop: 2 }}><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
             <div>
               <div style={{ margin: 0 }}>{property.address}</div>
               <div style={{ margin: 0 }}>{property.postalCode}</div>
@@ -252,6 +287,8 @@ interface MapProps {
   onDeselect?: () => void;
   onInitialBounds?: (bounds: Bounds) => void;
   onUserMoved?: (bounds: Bounds) => void;
+  fullscreen?: boolean;
+  viewMode?: string;
 }
 
 export default function Map({
@@ -265,6 +302,8 @@ export default function Map({
   onDeselect,
   onInitialBounds,
   onUserMoved,
+  fullscreen,
+  viewMode,
 }: MapProps) {
   const markerRefs = useRef<Record<number, L.Marker | null>>({});
   const setMarkerRef = useCallback((id: number, ref: L.Marker | null) => {
@@ -274,7 +313,7 @@ export default function Map({
   const handleDeselect = useCallback(() => onDeselect?.(), [onDeselect]);
 
   return (
-    <div style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden", borderRadius: "8px 32px 32px 8px" }}>
+    <div role="region" aria-label="Property map" style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden", borderRadius: fullscreen ? 0 : "8px 32px 32px 8px" }}>
       <MapContainer
         key={locale}
         center={[50.5, 4.5]}
@@ -294,6 +333,8 @@ export default function Map({
           onDeselect={handleDeselect}
           onInitialBounds={onInitialBounds ?? (() => {})}
           onUserMoved={onUserMoved ?? (() => {})}
+          fullscreen={!!fullscreen}
+          viewMode={viewMode ?? "hybrid"}
         />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
@@ -302,7 +343,7 @@ export default function Map({
         <MarkerClusterGroup
           chunkedLoading
           maxClusterRadius={50}
-          iconCreateFunction={createClusterIcon}
+          iconCreateFunction={makeClusterIconFn(t.properties)}
           spiderfyOnMaxZoom
           showCoverageOnHover={false}
         >

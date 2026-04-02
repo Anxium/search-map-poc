@@ -1,3 +1,5 @@
+@import "./tokens.css";
+
 *,
 *::before,
 *::after {
@@ -7,8 +9,15 @@
 }
 
 body {
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  color: var(--color-gray-900);
+}
+
+/* Focus indicator for keyboard users */
+:focus-visible {
+  outline: 2px solid var(--color-turquoise-600);
+  outline-offset: 2px;
 }
 
 /* Marker styles */
@@ -20,18 +29,20 @@ body {
 }
 
 .marker-active {
-  animation: marker-bounce 0.4s ease-out forwards, marker-pulse 1.5s ease-in-out 0.4s infinite;
+  animation: marker-pop 0.3s ease-out forwards;
 }
 
-@keyframes marker-bounce {
-  0% { transform: scale(0.8); opacity: 0.5; }
-  60% { transform: scale(1.8); }
-  100% { transform: scale(1.6); opacity: 1; }
+@keyframes marker-pop {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  60% { transform: scale(1.15); }
+  100% { transform: scale(1.1); opacity: 1; }
 }
 
-@keyframes marker-pulse {
-  0%, 100% { transform: scale(1.6); }
-  50% { transform: scale(1.8); }
+@media (prefers-reduced-motion: reduce) {
+  .marker-active {
+    animation: none;
+    transform: scale(1.1);
+  }
 }
 
 .marker-cluster {
@@ -41,12 +52,12 @@ body {
   background: none !important;
 }
 
-/* Property popup: strip Leaflet chrome, hide tip arrow */
+/* Property popup */
 .property-popup .leaflet-popup-content-wrapper {
   padding: 0 !important;
-  border-radius: 16px !important;
+  border-radius: var(--radius-sm) !important;
   overflow: hidden !important;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.1) !important;
+  box-shadow: var(--shadow-md) !important;
 }
 
 .property-popup .leaflet-popup-content {

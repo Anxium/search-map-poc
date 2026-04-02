@@ -33,6 +33,7 @@ export default function PropertyCard({
   onClick,
 }: PropertyCardProps) {
   const [photoIndex, setPhotoIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
   const totalPhotos = property.images.length;
 
   function prevPhoto(e: React.MouseEvent) {
@@ -49,27 +50,42 @@ export default function PropertyCard({
 
   return (
     <div
+      role="button"
+      tabIndex={0}
+      aria-pressed={isActive}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick?.(); } }}
       style={{
         cursor: "pointer",
         borderRadius: 24,
-        transition: "all 0.15s",
+        transition: "box-shadow 0.15s, border-color 0.15s, background 0.15s",
         ...(isActive
-          ? { background: "rgba(249,115,22,0.1)", border: "2px solid #f97316", padding: 8 }
-          : {}),
+          ? { background: "rgba(24,146,162,0.06)", border: "2px solid #1892A2", padding: 8, boxShadow: "0 0 0 3px rgba(24,146,162,0.12)" }
+          : isHovered
+            ? { border: "2px solid #d1d5db", padding: 8, boxShadow: "0 1px 2px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.10)" }
+            : { border: "2px solid transparent", padding: 8 }),
       }}
       onClick={onClick}
     >
+      {/* Active indicator: small label visible regardless of color perception */}
+      {isActive && (
+        <div style={{ fontSize: 11, fontWeight: 600, color: "#1892A2", marginBottom: 4, paddingLeft: 4, display: "flex", alignItems: "center", gap: 4 }}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1892A2" strokeWidth="3" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+          {t.selected}
+        </div>
+      )}
       <div style={{ display: "flex", gap: 6, alignItems: "stretch" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0, width: "50%" }}>
           <div style={{
             flex: 1, minHeight: 140, position: "relative",
-            borderRadius: "16px 6px 6px 6px", border: "1px solid #f3f4f6",
+            borderRadius: "16px 6px 6px 6px", border: "1px solid #F3F4F6",
             boxShadow: "0 1px 2px -1px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.1)",
             overflow: "hidden",
           }}>
             <img
               src={property.images[photoIndex]}
-              alt={`${t[property.type]} - ${property.address}`}
+              alt={`${t[property.type]} - ${property.address}, ${property.postalCode}`}
               style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
               loading="lazy"
             />
@@ -77,27 +93,29 @@ export default function PropertyCard({
           <div style={{ display: "flex", gap: 6, alignItems: "center", justifyContent: "center" }}>
             <button
               onClick={prevPhoto}
+              aria-label={t.apartment === "Appartement" ? "Photo précédente" : "Previous photo"}
               style={{
                 background: "white", border: "1px solid #d1d5db",
-                borderRadius: "6px 6px 16px 6px",
+                borderRadius: "6px 6px 6px 16px",
                 boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
                 padding: "7px 24px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
               }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4b5563" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4b5563" strokeWidth="2" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
             </button>
             <div style={{ flex: 1, textAlign: "center", fontSize: 12, fontWeight: 500, color: "#4b5563", lineHeight: "16px", padding: "6px 8px" }}>
               {photoIndex + 1} {t.photoOf} {totalPhotos} {t.photos}
             </div>
             <button
               onClick={nextPhoto}
+              aria-label={t.apartment === "Appartement" ? "Photo suivante" : "Next photo"}
               style={{
                 background: "white", border: "1px solid #d1d5db", borderRadius: 6,
                 boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
                 padding: "7px 24px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
               }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4b5563" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4b5563" strokeWidth="2" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
             </button>
           </div>
         </div>

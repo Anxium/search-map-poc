@@ -36,9 +36,9 @@ function SearchAreaButton({ enabled, loading, label, loadingLabel, onClick }: {
         padding: "10px 20px",
         fontSize: 14,
         fontWeight: 600,
-        color: disabled ? "#9ca3af" : "#374151",
+        color: disabled ? "#9CA3AF" : "#374151",
         cursor: disabled ? "default" : "pointer",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+        boxShadow: "0 1px 2px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.10)",
         display: "flex",
         alignItems: "center",
         gap: 8,
@@ -48,7 +48,7 @@ function SearchAreaButton({ enabled, loading, label, loadingLabel, onClick }: {
       }}
     >
       {loading ? (
-        <div style={{ width: 16, height: 16, border: "2px solid #e5e7eb", borderTopColor: "#26e0e5", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+        <div style={{ width: 16, height: 16, border: "2px solid #e5e7eb", borderTopColor: "#1892A2", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
       ) : (
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={disabled ? "#9ca3af" : "#374151"} strokeWidth="2">
           <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -145,11 +145,15 @@ export default function Home() {
 
   useEffect(() => {
     if (!activePropertyId) return;
-    const el = cardRefs.current[activePropertyId];
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
-  }, [activePropertyId]);
+    // Small delay to let the list DOM render after view mode switch
+    const timer = setTimeout(() => {
+      const el = cardRefs.current[activePropertyId];
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [activePropertyId, viewMode]);
 
   const locationMode = activeBounds ? "searchedZone" as const : "none" as const;
 
@@ -191,7 +195,7 @@ export default function Home() {
             }}
           >
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px", flexShrink: 0 }}>
-              <p style={{ fontSize: 14, fontWeight: 500, color: "#4b5563" }}>
+              <p aria-live="polite" style={{ fontSize: 14, fontWeight: 500, color: "#4b5563" }}>
                 {isLoading ? t.loading : `${results.length} ${t.results}`}
               </p>
               <div style={{ background: "white", border: "1px solid #d1d5db", borderRadius: 6, boxShadow: "0 1px 2px rgba(0,0,0,0.05)", display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", cursor: "pointer" }}>
@@ -203,7 +207,7 @@ export default function Home() {
             {isLoading ? (
               <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-                  <div style={{ width: 40, height: 40, border: "3px solid #e5e7eb", borderTopColor: "#26e0e5", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+                  <div style={{ width: 40, height: 40, border: "3px solid #e5e7eb", borderTopColor: "#1892A2", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
                   <span style={{ fontSize: 14, fontWeight: 500, color: "#6b7280" }}>{t.loading}</span>
                 </div>
               </div>
@@ -217,8 +221,8 @@ export default function Home() {
                   flex: 1,
                   overflowY: "auto",
                   ...(viewMode === "list"
-                    ? { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(480px, 1fr))", gap: 16 }
-                    : { display: "flex", flexDirection: "column", gap: 16 }),
+                    ? { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(480px, 1fr))", gap: 8 }
+                    : { display: "flex", flexDirection: "column", gap: 4 }),
                 }}
               >
                 {results.map((property) => (
@@ -249,7 +253,7 @@ export default function Home() {
 
         <div style={{
           flex: 1,
-          padding: "16px 32px 16px 0",
+          padding: viewMode === "map" ? 0 : "16px 32px 16px 0",
           position: "relative",
           ...(viewMode === "list" ? { width: 0, overflow: "hidden", padding: 0, flex: "none" } : {}),
         }}>
@@ -266,6 +270,8 @@ export default function Home() {
             onDeselect={() => selectProperty(null, "map")}
             onInitialBounds={handleInitialBounds}
             onUserMoved={handleUserMoved}
+            fullscreen={viewMode === "map"}
+            viewMode={viewMode}
           />
           {viewMode !== "list" && (
             <SearchAreaButton
