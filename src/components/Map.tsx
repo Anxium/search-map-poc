@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -232,17 +232,41 @@ function MapInternals({
 }
 
 function PropertyPopup({ property, t }: { property: Property; t: Translations }) {
+  const [photoIdx, setPhotoIdx] = useState(0);
   const type = t[property.type];
   const price = formatPrice(property.price) + (property.transaction === "rent" ? t.perMonth : "");
+  const totalPhotos = property.images.length;
 
   return (
     <Popup className="property-popup" closeButton={false} maxWidth={320} minWidth={280} autoPan={false}>
       <div style={{ width: 280, background: "white", fontFamily: "Inter, sans-serif" }}>
         <div style={{ position: "relative", width: "100%", height: 180, overflow: "hidden" }}>
-          <img src={property.images[0]} alt={`${type} - ${property.address}, ${property.postalCode}`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-          <div style={{ position: "absolute", bottom: 8, left: "50%", transform: "translateX(-50%)", display: "flex", gap: 6, alignItems: "center" }} aria-hidden="true">
-            {property.images.slice(0, 5).map((_, i) => (
-              <span key={i} style={{ width: i === 0 ? 10 : 7, height: i === 0 ? 10 : 7, borderRadius: 5, background: i === 0 ? "#26e0e5" : "rgba(255,255,255,0.6)", display: "block" }} />
+          <img src={property.images[photoIdx]} alt={`${type} - ${property.address}, ${property.postalCode}`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", transition: "opacity 0.2s" }} />
+          {/* Prev/Next click zones with light chevron indicators */}
+          <div
+            onClick={(e) => { e.stopPropagation(); setPhotoIdx((i) => (i - 1 + totalPhotos) % totalPhotos); }}
+            style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: "30%", cursor: "pointer", display: "flex", alignItems: "center", paddingLeft: 6 }}
+            aria-label={t.previousPhoto}
+            role="button"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.4))", opacity: 0.8 }} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+          </div>
+          <div
+            onClick={(e) => { e.stopPropagation(); setPhotoIdx((i) => (i + 1) % totalPhotos); }}
+            style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: "30%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 6 }}
+            aria-label={t.nextPhoto}
+            role="button"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.4))", opacity: 0.8 }} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+          </div>
+          {/* Dot indicators — clickable */}
+          <div style={{ position: "absolute", bottom: 8, left: "50%", transform: "translateX(-50%)", display: "flex", gap: 6, alignItems: "center" }}>
+            {property.images.slice(0, 6).map((_, i) => (
+              <span
+                key={i}
+                onClick={(e) => { e.stopPropagation(); setPhotoIdx(i); }}
+                style={{ width: i === photoIdx ? 10 : 7, height: i === photoIdx ? 10 : 7, borderRadius: 5, background: i === photoIdx ? "#26e0e5" : "rgba(255,255,255,0.6)", display: "block", cursor: "pointer", transition: "all 0.15s" }}
+              />
             ))}
           </div>
         </div>

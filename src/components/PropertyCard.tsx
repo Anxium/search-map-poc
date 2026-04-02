@@ -93,7 +93,7 @@ export default function PropertyCard({
           <div style={{ display: "flex", gap: 6, alignItems: "center", justifyContent: "center" }}>
             <button
               onClick={prevPhoto}
-              aria-label={t.apartment === "Appartement" ? "Photo précédente" : "Previous photo"}
+              aria-label={t.previousPhoto}
               style={{
                 background: "white", border: "1px solid #d1d5db",
                 borderRadius: "6px 6px 6px 16px",
@@ -108,7 +108,7 @@ export default function PropertyCard({
             </div>
             <button
               onClick={nextPhoto}
-              aria-label={t.apartment === "Appartement" ? "Photo suivante" : "Next photo"}
+              aria-label={t.nextPhoto}
               style={{
                 background: "white", border: "1px solid #d1d5db", borderRadius: 6,
                 boxShadow: "0 1px 2px rgba(0,0,0,0.05)",

@@ -34,6 +34,11 @@ export const translations = {
     searchedZone: "Zone recherchée",
     drawnZone: "Zone dessinée",
     selected: "Sélectionné",
+    typesSelected: "types",
+    allTypes: "Tous les types",
+    allFiltersDisabled: "Tous les filtres (pas dans cette version)",
+    previousPhoto: "Photo précédente",
+    nextPhoto: "Photo suivante",
   },
   nl: {
     buy: "Kopen",
@@ -65,6 +70,11 @@ export const translations = {
     searchedZone: "Gezocht gebied",
     drawnZone: "Getekende zone",
     selected: "Geselecteerd",
+    typesSelected: "types",
+    allTypes: "Alle types",
+    allFiltersDisabled: "Alle filters (niet in deze versie)",
+    previousPhoto: "Vorige foto",
+    nextPhoto: "Volgende foto",
   },
   en: {
     buy: "Buy",
@@ -96,6 +106,11 @@ export const translations = {
     searchedZone: "Searched zone",
     drawnZone: "Drawn zone",
     selected: "Selected",
+    typesSelected: "types",
+    allTypes: "All types",
+    allFiltersDisabled: "All filters (not in this version)",
+    previousPhoto: "Previous photo",
+    nextPhoto: "Next photo",
   },
 } as const;
 

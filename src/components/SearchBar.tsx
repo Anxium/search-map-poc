@@ -34,6 +34,7 @@ const selectStyle: CSSProperties = {
   background: "white", border: "1px solid #d1d5db", borderRadius: 6,
   boxShadow: "0 1px 2px rgba(0,0,0,0.05)", display: "flex", alignItems: "center",
   gap: 4, padding: "8px 12px", cursor: "pointer", fontSize: 14, whiteSpace: "nowrap",
+  height: 38,
 };
 
 const optionActive: CSSProperties = {
@@ -134,7 +135,15 @@ export default function SearchBar({
         </div>
       </div>
 
-      <Dropdown label={t.typePlaceholder} trigger={<div style={{ ...selectStyle, color: "#6b7280" }}>{selectedTypes.length === 0 || selectedTypes.length === allTypes.length ? t.typePlaceholder : selectedTypes.map((st) => t[st]).join(", ")} <ChevronDownIcon /></div>}>
+      <Dropdown label={t.typePlaceholder} trigger={<div style={{ ...selectStyle, color: selectedTypes.length > 0 ? "#111827" : "#6b7280" }}>{
+        selectedTypes.length === 0
+          ? t.typePlaceholder
+          : selectedTypes.length === allTypes.length
+            ? t.allTypes
+            : selectedTypes.length <= 2
+              ? selectedTypes.map((st) => t[st]).join(", ")
+              : `${selectedTypes.length} ${t.typesSelected}`
+      } <ChevronDownIcon /></div>}>
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           {allTypes.map((type) => (
             <label key={type} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", borderRadius: 4, cursor: "pointer" }}>
@@ -171,11 +180,10 @@ export default function SearchBar({
       </Dropdown>
 
       <div style={{ position: "relative", flexShrink: 0 }}>
-        <button style={{ background: "#1892a2", color: "white", fontSize: 14, fontWeight: 600, borderRadius: 6, boxShadow: "0 1px 2px rgba(0,0,0,0.05)", padding: "8px 12px", display: "flex", alignItems: "center", gap: 4, border: "none", cursor: "pointer" }}>
-          {t.allFilters}
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ transform: "rotate(-90deg)" }}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+        <button disabled style={{ background: "#9CA3AF", color: "white", fontSize: 14, fontWeight: 600, borderRadius: 6, boxShadow: "0 1px 2px rgba(0,0,0,0.05)", padding: "8px 12px", height: 38, display: "flex", alignItems: "center", gap: 4, border: "none", cursor: "not-allowed", opacity: 0.7 }}>
+          {t.allFiltersDisabled}
         </button>
-        {activeFilterCount > 0 && (
+        {false && activeFilterCount > 0 && (
           <span style={{ position: "absolute", top: -6, right: -6, background: "white", border: "1px solid #9ca3af", color: "#194f5f", fontSize: 12, fontWeight: 500, borderRadius: 10, width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center" }}>
             {activeFilterCount}
           </span>
