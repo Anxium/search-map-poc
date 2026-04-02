@@ -29,6 +29,10 @@ export const translations = {
     maxPrice: "Prix max",
     properties: "propriétés",
     searchThisArea: "Rechercher dans cette zone",
+    loading: "Chargement...",
+    noResults: "Aucun résultat dans cette zone",
+    searchedZone: "Zone recherchée",
+    drawnZone: "Zone dessinée",
   },
   nl: {
     buy: "Kopen",
@@ -55,6 +59,10 @@ export const translations = {
     maxPrice: "Max prijs",
     properties: "eigendommen",
     searchThisArea: "Zoek in dit gebied",
+    loading: "Laden...",
+    noResults: "Geen resultaten in dit gebied",
+    searchedZone: "Gezocht gebied",
+    drawnZone: "Getekende zone",
   },
   en: {
     buy: "Buy",
@@ -81,6 +89,10 @@ export const translations = {
     maxPrice: "Max Price",
     properties: "properties",
     searchThisArea: "Search this area",
+    loading: "Loading...",
+    noResults: "No results in this area",
+    searchedZone: "Searched zone",
+    drawnZone: "Drawn zone",
   },
 } as const;
 

@@ -27,6 +27,7 @@ interface SearchBarProps {
   onMinBedroomsChange: (value: number) => void;
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
+  locationMode?: "none" | "searchedZone" | "drawnZone";
 }
 
 const selectStyle: CSSProperties = {
@@ -79,7 +80,7 @@ export default function SearchBar({
   selectedTypes, onSelectedTypesChange, minPrice, maxPrice,
   priceRangeMin, priceRangeMax,
   onMinPriceChange, onMaxPriceChange, minBedrooms, onMinBedroomsChange,
-  viewMode, onViewModeChange,
+  viewMode, onViewModeChange, locationMode = "none",
 }: SearchBarProps) {
   const allTypes: PropertyType[] = ["apartment", "house", "studio"];
   const STEP = transactionType === "rent" ? 50 : 25000;
@@ -110,9 +111,9 @@ export default function SearchBar({
       </Dropdown>
 
       <div style={{ flexShrink: 0 }}>
-        <div style={{ ...selectStyle, color: "#6b7280" }}>
-          {t.locationPlaceholder}
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.5"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+        <div style={{ ...selectStyle, color: locationMode !== "none" ? "#111827" : "#6b7280" }}>
+          {locationMode === "searchedZone" ? t.searchedZone : locationMode === "drawnZone" ? t.drawnZone : t.locationPlaceholder}
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={locationMode !== "none" ? "#111827" : "#9ca3af"} strokeWidth="1.5"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
         </div>
       </div>
 

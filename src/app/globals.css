@@ -57,3 +57,7 @@ body {
 .property-popup .leaflet-popup-tip-container {
   display: none !important;
 }
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

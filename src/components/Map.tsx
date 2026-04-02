@@ -70,7 +70,16 @@ function toBounds(b: L.LatLngBounds): Bounds {
   return { north: b.getNorth(), south: b.getSouth(), east: b.getEast(), west: b.getWest() };
 }
 
-// Single controller handling geolocation, bounds, selection, and clicks
+const BELGIUM_BOUNDS = L.latLngBounds([49.4, 2.3], [51.6, 6.5]);
+
+// Repositions marker to bottom-center of viewport so popup has room above
+function panToMarkerBottomCenter(map: L.Map, lat: number, lng: number, zoom: number) {
+  const containerHeight = map.getContainer().clientHeight;
+  const markerPoint = map.project([lat, lng], zoom);
+  const centerPoint = L.point(markerPoint.x, markerPoint.y - containerHeight * 0.35);
+  return map.unproject(centerPoint, zoom);
+}
+
 function MapInternals({
   properties,
   activePropertyId,
@@ -95,13 +104,12 @@ function MapInternals({
   const ignoreUntil = useRef(0);
   const initialized = useRef(false);
 
-  // Refs for callbacks to avoid stale closures
   const onInitRef = useRef(onInitialBounds);
   const onMovedRef = useRef(onUserMoved);
   onInitRef.current = onInitialBounds;
   onMovedRef.current = onUserMoved;
 
-  // 1. Geolocation + initial bounds (runs once)
+  // 1. Geolocation + initial bounds
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
@@ -110,10 +118,7 @@ function MapInternals({
       onInitRef.current(toBounds(map.getBounds()));
     }
 
-    if (!navigator.geolocation) {
-      done();
-      return;
-    }
+    if (!navigator.geolocation) { done(); return; }
 
     ignoreUntil.current = Date.now() + 1500;
     navigator.geolocation.getCurrentPosition(
@@ -129,7 +134,7 @@ function MapInternals({
     return () => clearTimeout(fallback);
   }, [map]);
 
-  // 2. Listen to moveend — distinguish user moves from programmatic
+  // 2. Listen to moveend for user pans
   useEffect(() => {
     const handler = () => {
       if (Date.now() < ignoreUntil.current) return;
@@ -139,7 +144,7 @@ function MapInternals({
     return () => { map.off("moveend", handler); };
   }, [map]);
 
-  // 3. Update marker icons on selection change
+  // 3. Update marker icons
   useEffect(() => {
     const prev = prevActiveRef.current;
     const refs = markerRefs.current;
@@ -163,27 +168,29 @@ function MapInternals({
     if (!property) return;
 
     if (selectionSource === "list") {
-      // Ignore moveend for 2s: covers setView animation + popup open + autoPan
       ignoreUntil.current = Date.now() + 2000;
       const targetZoom = 16;
-      const targetPoint = map.project([property.lat, property.lng], targetZoom);
-      const offsetPoint = L.point(targetPoint.x, targetPoint.y + 150);
-      const offsetLatLng = map.unproject(offsetPoint, targetZoom);
-      map.setView(offsetLatLng, targetZoom, { animate: true, duration: 0.5 });
+      const center = panToMarkerBottomCenter(map, property.lat, property.lng, targetZoom);
+      map.setView(center, targetZoom, { animate: true, duration: 0.5 });
       const timer = setTimeout(() => {
         const marker = markerRefs.current?.[property.id];
         if (marker) marker.openPopup();
-      }, 700);
+      }, 600);
       return () => clearTimeout(timer);
     } else {
-      // Ignore moveend for 1s: covers popup open + autoPan
-      ignoreUntil.current = Date.now() + 1000;
-      const marker = markerRefs.current?.[property.id];
-      if (marker) marker.openPopup();
+      // Map click: reposition marker to bottom-center too
+      ignoreUntil.current = Date.now() + 1500;
+      const currentZoom = Math.max(map.getZoom(), 14);
+      const center = panToMarkerBottomCenter(map, property.lat, property.lng, currentZoom);
+      map.setView(center, currentZoom, { animate: true, duration: 0.3 });
+      const timer = setTimeout(() => {
+        const marker = markerRefs.current?.[property.id];
+        if (marker) marker.openPopup();
+      }, 350);
+      return () => clearTimeout(timer);
     }
   }, [activePropertyId, selectionKey, properties, map, markerRefs, selectionSource]);
 
-  // 5. Click on map background deselects
   useMapEvents({ click: () => onDeselect() });
 
   return null;
@@ -194,7 +201,7 @@ function PropertyPopup({ property, t }: { property: Property; t: Translations })
   const price = formatPrice(property.price) + (property.transaction === "rent" ? t.perMonth : "");
 
   return (
-    <Popup className="property-popup" closeButton={false} maxWidth={320} minWidth={280} autoPan={true} autoPanPadding={L.point(40, 40)}>
+    <Popup className="property-popup" closeButton={false} maxWidth={320} minWidth={280} autoPan={false}>
       <div style={{ width: 280, background: "white", fontFamily: "Inter, sans-serif" }}>
         <div style={{ position: "relative", width: "100%", height: 180, overflow: "hidden" }}>
           <img src={property.images[0]} alt={type} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
@@ -245,8 +252,6 @@ interface MapProps {
   onDeselect?: () => void;
   onInitialBounds?: (bounds: Bounds) => void;
   onUserMoved?: (bounds: Bounds) => void;
-  showSearchButton?: boolean;
-  onSearchThisArea?: () => void;
 }
 
 export default function Map({
@@ -260,8 +265,6 @@ export default function Map({
   onDeselect,
   onInitialBounds,
   onUserMoved,
-  showSearchButton,
-  onSearchThisArea,
 }: MapProps) {
   const markerRefs = useRef<Record<number, L.Marker | null>>({});
   const setMarkerRef = useCallback((id: number, ref: L.Marker | null) => {
@@ -276,6 +279,9 @@ export default function Map({
         key={locale}
         center={[50.5, 4.5]}
         zoom={8}
+        minZoom={7}
+        maxBounds={BELGIUM_BOUNDS}
+        maxBoundsViscosity={1.0}
         style={{ position: "absolute", inset: 0 }}
         zoomControl={false}
       >
@@ -316,37 +322,6 @@ export default function Map({
           ))}
         </MarkerClusterGroup>
       </MapContainer>
-
-      {showSearchButton && (
-        <button
-          onClick={(e) => { e.stopPropagation(); onSearchThisArea?.(); }}
-          style={{
-            position: "absolute",
-            top: 16,
-            left: "50%",
-            transform: "translateX(-50%)",
-            zIndex: 1000,
-            background: "white",
-            border: "1px solid #d1d5db",
-            borderRadius: 24,
-            padding: "10px 20px",
-            fontSize: 14,
-            fontWeight: 600,
-            color: "#374151",
-            cursor: "pointer",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            fontFamily: "Inter, sans-serif",
-          }}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-          {t.searchThisArea}
-        </button>
-      )}
     </div>
   );
 }
