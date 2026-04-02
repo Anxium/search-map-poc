@@ -8,8 +8,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Map Test - Properties in Brussels",
-  description: "POC: 200 properties on a Leaflet map with Carto tiles",
+  title: "We Invest — Recherche immobilière",
+  description: "Trouvez votre bien immobilier en Belgique. Recherche interactive sur carte avec filtres avancés.",
 };
 
 export default function RootLayout({
