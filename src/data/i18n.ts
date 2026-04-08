@@ -42,6 +42,7 @@ export const translations = {
     allFiltersDisabled: "Tous les filtres (pas dans cette version)",
     previousPhoto: "Photo précédente",
     nextPhoto: "Photo suivante",
+    scrollToZoom: "Utilisez ⌘ + scroll pour zoomer la carte",
   },
   nl: {
     buy: "Kopen",
@@ -81,6 +82,7 @@ export const translations = {
     allFiltersDisabled: "Alle filters (niet in deze versie)",
     previousPhoto: "Vorige foto",
     nextPhoto: "Volgende foto",
+    scrollToZoom: "Gebruik ⌘ + scroll om de kaart te zoomen",
   },
   en: {
     buy: "Buy",
@@ -120,6 +122,7 @@ export const translations = {
     allFiltersDisabled: "All filters (not in this version)",
     previousPhoto: "Previous photo",
     nextPhoto: "Next photo",
+    scrollToZoom: "Use ⌘ + scroll to zoom the map",
   },
 } as const;
 

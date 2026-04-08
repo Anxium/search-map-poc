@@ -234,6 +234,26 @@ function MapInternals({
 
   useMapEvents({ click: () => onDeselect() });
 
+  // Cmd/Ctrl+scroll to zoom
+  useEffect(() => {
+    map.scrollWheelZoom.disable();
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey) map.scrollWheelZoom.enable();
+    };
+    const onKeyUp = () => map.scrollWheelZoom.disable();
+    const onBlur = () => map.scrollWheelZoom.disable();
+
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    window.addEventListener("blur", onBlur);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("blur", onBlur);
+    };
+  }, [map]);
+
   return null;
 }
 
@@ -342,8 +362,59 @@ export default function Map({
 
   const handleDeselect = useCallback(() => onDeselect?.(), [onDeselect]);
 
+  const [showScrollHint, setShowScrollHint] = useState(false);
+  const hintTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const onWheel = (e: WheelEvent) => {
+      if (e.metaKey || e.ctrlKey) return;
+      setShowScrollHint(true);
+      clearTimeout(hintTimerRef.current);
+      hintTimerRef.current = setTimeout(() => setShowScrollHint(false), 1500);
+    };
+
+    el.addEventListener("wheel", onWheel, { passive: true });
+    return () => {
+      el.removeEventListener("wheel", onWheel);
+      clearTimeout(hintTimerRef.current);
+    };
+  }, []);
+
   return (
-    <div role="region" aria-label="Property map" style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden", borderRadius: fullscreen ? 0 : "8px 32px 32px 8px" }}>
+    <div ref={containerRef} role="region" aria-label="Property map" style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden", borderRadius: fullscreen ? 0 : "8px 32px 32px 8px" }}>
+      {showScrollHint && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 1000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(0,0,0,0.3)",
+            pointerEvents: "none",
+            transition: "opacity 0.3s",
+          }}
+        >
+          <div
+            style={{
+              background: "rgba(0,0,0,0.7)",
+              color: "white",
+              padding: "12px 24px",
+              borderRadius: 8,
+              fontSize: 14,
+              fontWeight: 500,
+              fontFamily: "Inter, sans-serif",
+            }}
+          >
+            {t.scrollToZoom}
+          </div>
+        </div>
+      )}
       <MapContainer
         key={locale}
         center={[50.5, 4.5]}

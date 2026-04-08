@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import Nav from "@/components/Nav";
+import Footer from "@/components/Footer";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -21,9 +23,11 @@ export default function RootLayout({
     <html lang="en" style={{ height: "100%" }}>
       <body
         className={inter.variable}
-        style={{ minHeight: "100%", display: "flex", flexDirection: "column", fontFamily: "var(--font-inter), sans-serif" }}
+        style={{ display: "flex", flexDirection: "column", fontFamily: "var(--font-inter), sans-serif" }}
       >
+        <Nav />
         {children}
+        <Footer />
       </body>
     </html>
   );

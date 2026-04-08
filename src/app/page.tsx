@@ -229,7 +229,7 @@ export default function Home() {
   const locationMode = activeBounds ? "searchedZone" as const : "none" as const;
 
   return (
-    <div style={{ display: "flex", height: "100vh", flexDirection: "column", background: "#f9fafb" }}>
+    <div style={{ display: "flex", height: "calc(100vh - var(--layout-nav-h))", flexDirection: "column", background: "#f9fafb", overflow: "hidden" }}>
       <SearchBar
         locale={locale}
         onLocaleChange={setLocale}
@@ -251,7 +251,7 @@ export default function Home() {
         locationMode={locationMode}
       />
 
-      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+      <div style={{ display: "flex", flex: 1, overflow: "hidden", height: "calc(100vh - var(--layout-nav-h) - 54px)" }}>
         {viewMode !== "map" && (
           <div
             style={{
