@@ -77,74 +77,83 @@ export default function PropertyCard({
           {t.selected}
         </div>
       )}
-      <div style={{ display: "flex", gap: 6, alignItems: "stretch", flex: 1, minHeight: 0 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0, width: "50%", justifyContent: "space-between" }}>
-          <div style={{
-            aspectRatio: "3 / 2", position: "relative",
-            borderRadius: "16px 6px 6px 6px", border: "1px solid #F3F4F6",
-            boxShadow: "0 1px 2px -1px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.1)",
-            overflow: "hidden",
-          }}>
-            <img
-              src={property.images[photoIndex]}
-              alt={`${t[property.type]} - ${property.address}, ${property.postalCode}`}
-              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
-              loading="lazy"
-            />
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gridTemplateAreas: '"photo text" "nav text"',
+          columnGap: 6,
+          rowGap: 6,
+          flex: 1,
+          minHeight: 0,
+        }}
+      >
+        <div style={{
+          gridArea: "photo",
+          aspectRatio: "3 / 2", position: "relative",
+          borderRadius: "16px 6px 6px 6px", border: "1px solid #F3F4F6",
+          boxShadow: "0 1px 2px -1px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.1)",
+          overflow: "hidden",
+        }}>
+          <img
+            src={property.images[photoIndex]}
+            alt={`${t[property.type]} - ${property.address}, ${property.postalCode}`}
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+            loading="lazy"
+          />
+        </div>
+        <div style={{ gridArea: "nav", display: "flex", gap: 6, alignItems: "center", justifyContent: "center" }}>
+          <button
+            onClick={prevPhoto}
+            aria-label={t.previousPhoto}
+            style={{
+              background: "white", border: "1px solid #d1d5db",
+              borderRadius: "6px 6px 6px 16px",
+              boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+              padding: "7px 24px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+          >
+            <ChevronLeftIcon size={16} color="#4b5563" stroke={2} aria-hidden="true" />
+          </button>
+          <div style={{ flex: 1, textAlign: "center", fontSize: 12, fontWeight: 500, color: "#4b5563", lineHeight: "16px", padding: "6px 8px" }}>
+            {photoIndex + 1} {t.photoOf} {totalPhotos} {t.photos}
           </div>
-          <div style={{ display: "flex", gap: 6, alignItems: "center", justifyContent: "center" }}>
-            <button
-              onClick={prevPhoto}
-              aria-label={t.previousPhoto}
-              style={{
-                background: "white", border: "1px solid #d1d5db",
-                borderRadius: "6px 6px 6px 16px",
-                boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
-                padding: "7px 24px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-              }}
-            >
-              <ChevronLeftIcon size={16} color="#4b5563" stroke={2} aria-hidden="true" />
-            </button>
-            <div style={{ flex: 1, textAlign: "center", fontSize: 12, fontWeight: 500, color: "#4b5563", lineHeight: "16px", padding: "6px 8px" }}>
-              {photoIndex + 1} {t.photoOf} {totalPhotos} {t.photos}
-            </div>
-            <button
-              onClick={nextPhoto}
-              aria-label={t.nextPhoto}
-              style={{
-                background: "white", border: "1px solid #d1d5db", borderRadius: 6,
-                boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
-                padding: "7px 24px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-              }}
-            >
-              <ChevronRightIcon size={16} color="#4b5563" stroke={2} aria-hidden="true" />
-            </button>
-          </div>
+          <button
+            onClick={nextPhoto}
+            aria-label={t.nextPhoto}
+            style={{
+              background: "white", border: "1px solid #d1d5db", borderRadius: 6,
+              boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+              padding: "7px 24px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+          >
+            <ChevronRightIcon size={16} color="#4b5563" stroke={2} aria-hidden="true" />
+          </button>
         </div>
 
-        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
-          <div style={{
-            background: "white", border: "1px solid #d1d5db",
-            borderRadius: "6px 16px 16px 6px",
-            boxShadow: "0 1px 2px -1px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.1)",
-            overflow: "hidden", flex: 1, display: "flex", flexDirection: "column",
-          }}>
-            <div style={{ paddingTop: 16, paddingLeft: 12, paddingRight: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-              <p style={{ fontSize: 16, fontWeight: 600, color: "#111827", lineHeight: "24px", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {t[property.type]}
-              </p>
-              <div style={{ fontSize: 14, fontWeight: 500, color: "#4b5563", lineHeight: "20px" }}>
-                <p style={{ margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{property.address}</p>
-                <p style={{ margin: 0 }}>{property.postalCode}</p>
-              </div>
+        <div style={{
+          gridArea: "text",
+          background: "white", border: "1px solid #d1d5db",
+          borderRadius: "6px 16px 16px 6px",
+          boxShadow: "0 1px 2px -1px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.1)",
+          overflow: "hidden", display: "flex", flexDirection: "column",
+          minWidth: 0,
+        }}>
+          <div style={{ paddingTop: 16, paddingLeft: 12, paddingRight: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+            <p style={{ fontSize: 16, fontWeight: 600, color: "#111827", lineHeight: "24px", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {t[property.type]}
+            </p>
+            <div style={{ fontSize: 14, fontWeight: 500, color: "#4b5563", lineHeight: "20px" }}>
+              <p style={{ margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{property.address}</p>
+              <p style={{ margin: 0 }}>{property.postalCode}</p>
             </div>
-            <div style={{ padding: "8px 0", flex: 1 }}>
-              <SpecRow icon={<EuroIcon size={18} color="#6b7280" stroke={1.5} />} label={priceLabel} />
-              <SpecRow icon={<RulerIcon size={18} color="#6b7280" stroke={1.5} />} label={`${property.surface} m²`} />
-              {property.bedrooms > 0 && (
-                <SpecRow icon={<BedIcon size={18} color="#6b7280" stroke={1.5} />} label={`${property.bedrooms} ${t.bedrooms}`} />
-              )}
-            </div>
+          </div>
+          <div style={{ padding: "8px 0", flex: 1 }}>
+            <SpecRow icon={<EuroIcon size={18} color="#6b7280" stroke={1.5} />} label={priceLabel} />
+            <SpecRow icon={<RulerIcon size={18} color="#6b7280" stroke={1.5} />} label={`${property.surface} m²`} />
+            {property.bedrooms > 0 && (
+              <SpecRow icon={<BedIcon size={18} color="#6b7280" stroke={1.5} />} label={`${property.bedrooms} ${t.bedrooms}`} />
+            )}
           </div>
         </div>
       </div>
