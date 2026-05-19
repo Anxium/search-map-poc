@@ -289,7 +289,7 @@ export default function Home() {
                   flex: 1,
                   overflowY: "auto",
                   ...(viewMode === "list"
-                    ? { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(480px, 1fr))", gap: 8 }
+                    ? { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(480px, 1fr))", alignContent: "start", gap: 8 }
                     : { display: "flex", flexDirection: "column", gap: 4 }),
                 }}
               >
@@ -300,6 +300,7 @@ export default function Home() {
                       if (el) cardRefs.current[property.id] = el;
                       else delete cardRefs.current[property.id];
                     }}
+                    style={viewMode === "list" ? { display: "flex" } : undefined}
                   >
                     <PropertyCard
                       property={property}

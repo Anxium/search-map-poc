@@ -60,6 +60,8 @@ export default function PropertyCard({
         cursor: "pointer",
         borderRadius: 24,
         transition: "box-shadow 0.15s, border-color 0.15s, background 0.15s",
+        display: "flex",
+        flexDirection: "column",
         ...(isActive
           ? { background: "rgba(24,146,162,0.06)", border: "2px solid #1892A2", padding: 8, boxShadow: "0 0 0 3px rgba(24,146,162,0.12)" }
           : isHovered
@@ -75,10 +77,10 @@ export default function PropertyCard({
           {t.selected}
         </div>
       )}
-      <div style={{ display: "flex", gap: 6, alignItems: "stretch" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0, width: "50%" }}>
+      <div style={{ display: "flex", gap: 6, alignItems: "stretch", flex: 1, minHeight: 0 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0, width: "50%", justifyContent: "space-between" }}>
           <div style={{
-            flex: 1, minHeight: 140, position: "relative",
+            aspectRatio: "3 / 2", position: "relative",
             borderRadius: "16px 6px 6px 6px", border: "1px solid #F3F4F6",
             boxShadow: "0 1px 2px -1px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.1)",
             overflow: "hidden",
@@ -139,9 +141,9 @@ export default function PropertyCard({
             <div style={{ padding: "8px 0", flex: 1 }}>
               <SpecRow icon={<EuroIcon size={18} color="#6b7280" stroke={1.5} />} label={priceLabel} />
               <SpecRow icon={<RulerIcon size={18} color="#6b7280" stroke={1.5} />} label={`${property.surface} m²`} />
-              <div style={{ visibility: property.bedrooms > 0 ? "visible" : "hidden" }} aria-hidden={property.bedrooms === 0}>
+              {property.bedrooms > 0 && (
                 <SpecRow icon={<BedIcon size={18} color="#6b7280" stroke={1.5} />} label={`${property.bedrooms} ${t.bedrooms}`} />
-              </div>
+              )}
             </div>
           </div>
         </div>
