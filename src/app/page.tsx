@@ -300,7 +300,7 @@ export default function Home() {
                       if (el) cardRefs.current[property.id] = el;
                       else delete cardRefs.current[property.id];
                     }}
-                    style={viewMode === "list" ? { display: "flex" } : undefined}
+                    style={viewMode === "list" ? { display: "grid" } : undefined}
                   >
                     <PropertyCard
                       property={property}
