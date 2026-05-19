@@ -60,6 +60,9 @@ export default function PropertyCard({
         cursor: "pointer",
         borderRadius: 24,
         transition: "box-shadow 0.15s, border-color 0.15s, background 0.15s",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
         ...(isActive
           ? { background: "rgba(24,146,162,0.06)", border: "2px solid #1892A2", padding: 8, boxShadow: "0 0 0 3px rgba(24,146,162,0.12)" }
           : isHovered
@@ -75,7 +78,7 @@ export default function PropertyCard({
           {t.selected}
         </div>
       )}
-      <div style={{ display: "flex", gap: 6, alignItems: "stretch" }}>
+      <div style={{ display: "flex", gap: 6, alignItems: "stretch", flex: 1, minHeight: 0 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0, width: "50%" }}>
           <div style={{
             flex: 1, minHeight: 140, position: "relative",
